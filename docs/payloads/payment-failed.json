@@ -1,0 +1,11 @@
+{
+  "external_id": "pi_3OxKL2Stripe99999",
+  "contact_email": "contacto.inexistente@ejemplo.com",
+  "amount": 4900,
+  "currency": "EUR",
+  "status": "failed",
+  "provider": "stripe",
+  "metadata": {
+    "failure_reason": "insufficient_funds"
+  }
+}

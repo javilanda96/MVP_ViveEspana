@@ -1,0 +1,12 @@
+{
+  "email": "carlos.lopez@empresa.es",
+  "phone": "+34699111222",
+  "first_name": "Carlos",
+  "last_name": "Lopez",
+  "external_id": "manual_001",
+  "source": "manual",
+  "metadata": {
+    "notes": "Contacto creado manualmente desde panel interno",
+    "tag": "demo"
+  }
+}

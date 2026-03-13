@@ -1,0 +1,12 @@
+{
+  "external_id": "pi_3OxKL2Stripe12345",
+  "contact_email": "maria.garcia@ejemplo.com",
+  "amount": 9900,
+  "currency": "EUR",
+  "status": "succeeded",
+  "provider": "stripe",
+  "metadata": {
+    "description": "Pago mensual plan básico",
+    "stripe_customer_id": "cus_Stripe9876"
+  }
+}

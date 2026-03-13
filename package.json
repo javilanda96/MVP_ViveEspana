@@ -1,0 +1,41 @@
+{
+  "name": "pyme-data-integration-mvp",
+  "version": "0.1.0",
+  "description": "MVP de integración de datos para pyme: GoHighLevel, Stripe → Supabase",
+  "main": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "db:setup:local": "psql -h localhost -U postgres -d postgres -f sql/schema.sql",
+    "lint": "eslint src --ext .ts",
+    "type-check": "tsc --noEmit"
+  },
+  "keywords": [
+    "integration",
+    "crm",
+    "payments",
+    "supabase",
+    "webhook"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.38.0",
+    "fastify": "^4.25.0",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.3",
+    "tsx": "^4.7.0",
+    "pino-pretty": "^10.3.1",
+    "eslint": "^8.55.0",
+    "@typescript-eslint/eslint-plugin": "^6.13.2",
+    "@typescript-eslint/parser": "^6.13.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
