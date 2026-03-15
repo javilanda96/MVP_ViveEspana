@@ -76,6 +76,12 @@ const opportunityBodySchema = {
     last_stage_change_at: { type: "string" },
     lastStageChangeAt:    { type: "string" },
 
+    // GHL real webhook fields — normalised to internal names in the service
+    opportunity_name: { type: "string" }, // GHL title field (not "name")
+    email:            { type: "string" }, // GHL contact email (not "contact_email")
+    pipleline_stage:  { type: "string" }, // GHL typo (sic) — maps to stage_name
+    phone:            { type: "string" },
+
     // Passthrough
     metadata:       { type: "object" },
   },

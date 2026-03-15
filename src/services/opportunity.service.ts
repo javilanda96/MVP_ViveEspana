@@ -4,6 +4,7 @@ import {
   insertStageHistoryRow,
 } from "../repositories/opportunity.repository.js";
 import { insertEventLog, isEventAlreadyLogged } from "../repositories/event.repository.js";
+import { findContactByEmail } from "../repositories/payment.repository.js";
 import type { Opportunity, OpportunityInput } from "../types/models.js";
 
 // ─── Tipos públicos ───────────────────────────────────────────────────────────
@@ -47,6 +48,14 @@ export interface OpportunityPayload {
   last_stage_change_at?: string;
   lastStageChangeAt?:    string;
 
+  // ── GHL real webhook fields ────────────────────────────────────────────────
+  // These come directly from observed GHL payloads. Normalised to internal
+  // names in processOpportunity() — not used at route level.
+  opportunity_name?: string;  // GHL sends the title here, not in "name"
+  email?: string;             // GHL sends contact email as "email", not "contact_email"
+  pipleline_stage?: string;   // GHL typo (sic) — stage label; stage_id is never sent
+  phone?: string;             // present in GHL payload; carried to metadata
+
   // ── Extra ──────────────────────────────────────────────────────────────────
   metadata?: Record<string, unknown>;
 }
@@ -82,7 +91,7 @@ export async function processOpportunity(
     payload.external_id ?? payload.id ?? null;
 
   const resolvedName =
-    payload.name ?? payload.title ?? null;
+    payload.name ?? payload.title ?? payload.opportunity_name ?? null;
 
   const pipelineId =
     payload.pipeline_id ?? payload.pipelineId ?? null;
@@ -90,11 +99,14 @@ export async function processOpportunity(
   const pipelineName =
     payload.pipeline_name ?? payload.pipelineName ?? null;
 
-  const stageId =
-    payload.stage_id ?? payload.stageId ?? null;
-
+  // pipleline_stage (GHL typo) carries the stage label; stage_id is never
+  // present in real GHL payloads so we fall back to stageName as a synthetic
+  // id — satisfies the NOT NULL DB column without blocking MVP processing.
   const stageName =
-    payload.stage_name ?? payload.stageName ?? null;
+    payload.stage_name ?? payload.stageName ?? payload.pipleline_stage ?? null;
+
+  const stageId =
+    payload.stage_id ?? payload.stageId ?? stageName ?? null;
 
   const monetaryValue =
     payload.monetary_value ?? payload.monetaryValue ?? null;
@@ -105,8 +117,17 @@ export async function processOpportunity(
   const lastStageChangeAt =
     payload.last_stage_change_at ?? payload.lastStageChangeAt ?? null;
 
-  const contactId =
-    payload.contact_id ?? payload.contactId ?? null;
+  // GHL sends its own alphanumeric contact id (e.g. "B6rgLqjjEO9MfcxLk07k"),
+  // not a Supabase UUID. Detect this early and treat such values as untrusted
+  // so we fall through to email-based contact lookup below.
+  const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const rawContactId = payload.contact_id ?? payload.contactId ?? null;
+  const contactId    = rawContactId !== null && UUID_REGEX.test(rawContactId)
+    ? rawContactId
+    : null;
+
+  // GHL sends contact email as "email"; internal callers use "contact_email".
+  const contactEmail = payload.contact_email ?? payload.email ?? null;
 
   // ── Validation ────────────────────────────────────────────────────────────
   if (!externalId) {
@@ -119,14 +140,16 @@ export async function processOpportunity(
     throw new ValidationError("Opportunity payload must include a pipeline_id or pipelineId");
   }
   if (!stageId) {
-    throw new ValidationError("Opportunity payload must include a stage_id or stageId");
+    throw new ValidationError(
+      "Opportunity payload must include a stage_id, stageId, stage_name, or pipleline_stage"
+    );
   }
   if (!payload.status) {
     throw new ValidationError("Opportunity payload must include a status");
   }
-  if (!contactId && !payload.contact_email) {
+  if (!contactId && !contactEmail) {
     throw new ValidationError(
-      "Opportunity payload must include at least one of: contact_id, contactId, contact_email"
+      "Opportunity payload must include at least one of: contact_id, contactId, contact_email, email"
     );
   }
 
@@ -145,27 +168,46 @@ export async function processOpportunity(
   }
 
   // ── Contact resolution ────────────────────────────────────────────────────
-  // contact_id from the payload is trusted directly (GHL sends its own UUID
-  // for the contact). If absent, we would need to look up by email — for now
-  // we require at least one of the two so the FK can be populated.
-  //
-  // NOTE: We do NOT do a DB lookup by email here because GHL webhooks always
-  // include the contactId field. The contact_email fallback is kept for
-  // API-style callers that test the endpoint manually.
-  if (!contactId) {
-    await insertEventLog({
-      webhook_source:    webhookSource,
-      external_event_id: externalEventId,
-      event_type:        "opportunity.updated",
-      status:            "failed",
-      payload:           rawPayload,
-      error_message:     "contact_id missing and email lookup not supported yet",
-      idempotency_key:   idempotencyKey,
-      processed_at:      new Date().toISOString(),
-    });
-    throw new ValidationError(
-      "contact_id or contactId is required (email-based lookup not yet implemented)"
-    );
+  // Real GHL payloads always include contact_id but it is GHL's own
+  // alphanumeric id, not a Supabase UUID. The UUID check above already
+  // discarded it (contactId = null), so we always fall through to email
+  // lookup for GHL-originated webhooks. Internal API callers that already
+  // have our UUID can pass it directly and skip the lookup.
+  let resolvedContactId = contactId;
+
+  if (!resolvedContactId) {
+    if (!contactEmail) {
+      await insertEventLog({
+        webhook_source:    webhookSource,
+        external_event_id: externalEventId,
+        event_type:        "opportunity.updated",
+        status:            "failed",
+        payload:           rawPayload,
+        error_message:     "contact_id is not a valid Supabase UUID and no email provided for fallback lookup",
+        idempotency_key:   idempotencyKey,
+        processed_at:      new Date().toISOString(),
+      });
+      throw new ValidationError(
+        "contact_id is not a Supabase UUID; provide email or contact_email for contact lookup"
+      );
+    }
+
+    const contact = await findContactByEmail(contactEmail);
+    if (!contact) {
+      await insertEventLog({
+        webhook_source:    webhookSource,
+        external_event_id: externalEventId,
+        event_type:        "opportunity.updated",
+        status:            "failed",
+        payload:           rawPayload,
+        error_message:     `No contact found with email: ${contactEmail}`,
+        idempotency_key:   idempotencyKey,
+        processed_at:      new Date().toISOString(),
+      });
+      throw new ValidationError(`No contact found with email: ${contactEmail}`);
+    }
+
+    resolvedContactId = contact.id;
   }
 
   // ── Fetch existing opportunity (for stage-change detection) ───────────────
@@ -179,7 +221,7 @@ export async function processOpportunity(
   // ── Build upsert record ───────────────────────────────────────────────────
   const record: OpportunityInput = {
     external_id:          externalId,
-    contact_id:           contactId,
+    contact_id:           resolvedContactId!,
     name:                 resolvedName,
     pipeline_id:          pipelineId,
     pipeline_name:        pipelineName,
