@@ -10,6 +10,25 @@ function validateEnv(): void {
   if (missing.length > 0) {
     throw new Error(`Missing environment variables: ${missing.join(", ")}`);
   }
+
+  // In production, webhook secrets are mandatory.
+  // Without them the signature preHandlers run in permissive mode and accept
+  // every incoming request regardless of origin — a critical security gap.
+  if ((process.env.NODE_ENV || "development") === "production") {
+    const requiredInProduction = [
+      "STRIPE_WEBHOOK_SECRET",
+      "GHL_WEBHOOK_SECRET",
+    ];
+    const missingInProduction = requiredInProduction.filter(
+      (key) => !process.env[key]
+    );
+    if (missingInProduction.length > 0) {
+      throw new Error(
+        `Missing required production environment variables: ${missingInProduction.join(", ")}. ` +
+        `Set them or the webhook endpoints will accept unauthenticated requests.`
+      );
+    }
+  }
 }
 
 validateEnv();
@@ -27,10 +46,12 @@ export const config = {
     serviceKey: process.env.SUPABASE_SERVICE_KEY!,
   },
 
-  // Webhook timeouts y retries (para fase futura)
+  // Webhook secrets — absent (undefined/empty) enables permissive dev mode
   webhooks: {
-    timeoutMs: 5000,
-    maxRetries: 3,
+    timeoutMs:    5000,
+    maxRetries:   3,
+    stripeSecret: process.env.STRIPE_WEBHOOK_SECRET || undefined,
+    ghlSecret:    process.env.GHL_WEBHOOK_SECRET    || undefined,
   },
 } as const;
 

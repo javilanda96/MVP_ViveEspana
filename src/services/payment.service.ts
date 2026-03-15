@@ -2,12 +2,13 @@ import {
   insertPayment,
   findContactByEmail,
 } from "../repositories/payment.repository.js";
-import { insertEventLog } from "../repositories/event.repository.js";
+import { insertEventLog, isEventAlreadyLogged } from "../repositories/event.repository.js";
 import type { Payment, PaymentInput } from "../types/models.js";
 
 // ─── Tipos públicos ───────────────────────────────────────────────────────────
 
 export interface PaymentPayload {
+  event_id?: string;         // Stripe envelope id (evt_xxx) — used for webhook-level idempotency
   external_id: string;
   contact_id?: string;
   contact_email?: string;
@@ -32,6 +33,13 @@ export class DuplicatePaymentError extends Error {
   constructor(externalId: string) {
     super(`Duplicate payment ignored: ${externalId}`);
     this.name = "DuplicatePaymentError";
+  }
+}
+
+export class DuplicateEventError extends Error {
+  constructor(eventId: string) {
+    super(`Stripe event already processed: ${eventId}`);
+    this.name = "DuplicateEventError";
   }
 }
 
@@ -70,8 +78,23 @@ export async function processPayment(
   // ── Fuente y clave de idempotencia ────────────────────────────────────────────
   // Defined here so they are available for ALL event log calls below,
   // including the failed-contact case.
-  const webhookSource = payload.provider === "stripe" ? "stripe" : "flywire";
+  const webhookSource  = payload.provider === "stripe" ? "stripe" : "flywire";
   const idempotencyKey = payload.external_id;
+
+  // external_event_id: prefer the Stripe envelope event id (evt_xxx) over the
+  // payment id so events_log rows are keyed by the canonical Stripe event.
+  const externalEventId = payload.event_id ?? payload.external_id;
+
+  // ── Idempotencia a nivel de evento ────────────────────────────────────────────
+  // If the caller supplied a Stripe event id, check whether it was already
+  // successfully processed. Return early without re-inserting or re-logging.
+  // Fails open on DB error: if the check itself fails, we process the event.
+  if (payload.event_id) {
+    const alreadyProcessed = await isEventAlreadyLogged(payload.event_id);
+    if (alreadyProcessed) {
+      throw new DuplicateEventError(payload.event_id);
+    }
+  }
 
   // ── Resolución del contacto ───────────────────────────────────────────────────
   let contactId = payload.contact_id;
@@ -84,7 +107,7 @@ export async function processPayment(
       const errorMessage = `No contact found with email: ${payload.contact_email}`;
       await insertEventLog({
         webhook_source:    webhookSource,
-        external_event_id: payload.external_id,
+        external_event_id: externalEventId,
         event_type:        "payment.created",
         status:            "failed",
         payload:           rawPayload,
@@ -119,7 +142,7 @@ export async function processPayment(
   } catch (err) {
     await insertEventLog({
       webhook_source:    webhookSource,
-      external_event_id: payload.external_id,
+      external_event_id: externalEventId,
       event_type:        "payment.created",
       status:            "failed",
       payload:           rawPayload,
@@ -142,7 +165,7 @@ export async function processPayment(
 
   await insertEventLog({
     webhook_source:    webhookSource,
-    external_event_id: payload.external_id,
+    external_event_id: externalEventId,
     event_type:        "payment.created",
     status:            "processed",
     payload:           rawPayload,

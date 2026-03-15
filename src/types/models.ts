@@ -109,6 +109,70 @@ export interface EventLogInput {
   processed_at: string | null;
 }
 
+// Tabla: opportunities
+export interface Opportunity {
+  id: string;
+  external_id: string;           // GHL opportunity id
+  contact_id: string;
+  name: string;
+  pipeline_id: string;
+  pipeline_name: string | null;
+  stage_id: string;
+  stage_name: string | null;
+  status: string;                // open | won | lost | abandoned (stored as-is from GHL)
+  monetary_value: number | null;
+  currency: string;
+  assigned_to: string | null;
+  last_stage_change_at: string | null;
+  created_at: string;
+  updated_at: string;
+  metadata: Record<string, unknown> | null;
+}
+
+// Payload para insertar/actualizar una oportunidad (sin campos generados por la BD)
+export interface OpportunityInput {
+  external_id: string;
+  contact_id: string;
+  name: string;
+  pipeline_id: string;
+  pipeline_name: string | null;
+  stage_id: string;
+  stage_name: string | null;
+  status: string;
+  monetary_value: number | null;
+  currency: string;
+  assigned_to: string | null;
+  last_stage_change_at: string | null;
+  metadata: Record<string, unknown> | null;
+}
+
+// Tabla: opportunity_stage_history
+export interface OpportunityStageHistory {
+  id: string;
+  opportunity_id: string;
+  from_stage_id: string | null;
+  from_stage_name: string | null;
+  to_stage_id: string;
+  to_stage_name: string | null;
+  status: string;
+  monetary_value: number | null;
+  moved_at: string;
+  ghl_event_id: string | null;
+}
+
+// Payload para insertar una entrada en el historial de etapas
+export interface OpportunityStageHistoryInput {
+  opportunity_id: string;
+  from_stage_id: string | null;
+  from_stage_name: string | null;
+  to_stage_id: string;
+  to_stage_name: string | null;
+  status: string;
+  monetary_value: number | null;
+  moved_at: string;
+  ghl_event_id: string | null;
+}
+
 // Tabla: sync_queue
 export interface SyncQueueItem {
   id: string;
