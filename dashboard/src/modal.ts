@@ -15,7 +15,7 @@ export function openModal(title: string, bodyHtml: string): void {
     <div class="modal-panel" role="dialog" aria-modal="true">
       <div class="modal-header">
         <h3>${title}</h3>
-        <button class="modal-close" id="modal-close-btn" aria-label="Close">✕</button>
+        <button class="modal-close" id="modal-close-btn" aria-label="Cerrar">✕</button>
       </div>
       <div id="modal-body">${bodyHtml}</div>
     </div>

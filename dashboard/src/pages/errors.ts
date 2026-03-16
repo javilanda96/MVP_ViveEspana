@@ -11,7 +11,7 @@ export async function renderErrors(container: HTMLElement): Promise<void> {
     filter = { ...filter, offset };
     const res = await getErrors(filter);
 
-    // Build a simple count-by-event_type summary from current page
+    // Agrupación por tipo de evento en la página actual
     const counts: Record<string, number> = {};
     for (const row of res.data) {
       counts[row.event_type] = (counts[row.event_type] ?? 0) + 1;
@@ -23,55 +23,63 @@ export async function renderErrors(container: HTMLElement): Promise<void> {
 
     container.innerHTML = `
       <section class="page">
-        <h2>Errors</h2>
+        <h2>Errores</h2>
+        <p class="page-desc">
+          Eventos que han producido algún error durante el procesamiento. Usa esta sección
+          para detectar incidencias en las integraciones y revisar el payload original que
+          causó el fallo. Haz clic en cualquier fila para ver el detalle completo.
+        </p>
 
-        <p class="note" style="margin-bottom:1.25rem">
-          ⚠ <strong>Important visibility limit:</strong>
-          This page shows only events that <em>reached the service layer</em> and were persisted
-          with <code>status = failed</code>.
-          Requests rejected before persistence — auth failures (401), schema validation errors (400),
-          and generic Fastify runtime exceptions — are <strong>not shown here</strong>.
-          If you expect errors that are missing from this list, check server logs directly.
+        <p class="note" style="margin-bottom:1.5rem">
+          ⚠ <strong>Límite de visibilidad importante:</strong>
+          Esta página muestra únicamente los eventos que <em>alcanzaron la capa de servicio</em>
+          y fueron persistidos con <code>estado = fallido</code>.
+          Las solicitudes rechazadas antes de ser persistidas — errores de autenticación (401),
+          fallos de validación de esquema (400) y excepciones genéricas de Fastify — <strong>no
+          aparecen aquí</strong>. Si esperas errores que no están en este listado, revisa
+          directamente los logs del servidor.
         </p>
 
         ${res.total === 0 ? "" : `
-          <h3>Failures on this page by event type</h3>
-          <table class="data-table" style="max-width:400px;margin-bottom:1.5rem">
-            <thead><tr><th>Event type</th><th>Count (this page)</th></tr></thead>
-            <tbody>${summaryRows}</tbody>
-          </table>
+          <h3>Fallos en esta página por tipo de evento</h3>
+          <div class="table-wrap" style="max-width:420px;margin-bottom:1.75rem">
+            <table class="data-table">
+              <thead><tr><th>Tipo de evento</th><th>Cantidad (esta página)</th></tr></thead>
+              <tbody>${summaryRows}</tbody>
+            </table>
+          </div>
         `}
 
-        <h3>Failed events</h3>
+        <h3>Eventos fallidos</h3>
 
         <div class="filters" id="err-filters">
-          <label>Event type
-            <input type="text" id="f-event-type" placeholder="e.g. opportunity.updated" value="${esc(filter.event_type ?? "")}" />
+          <label>Tipo de evento
+            <input type="text" id="f-event-type" placeholder="p. ej. opportunity.updated" value="${esc(filter.event_type ?? "")}" />
           </label>
-          <label>From
+          <label>Desde
             <input type="datetime-local" id="f-from" value="${filter.from ?? ""}" />
           </label>
-          <label>To
+          <label>Hasta
             <input type="datetime-local" id="f-to"   value="${filter.to   ?? ""}" />
           </label>
-          <button id="btn-apply">Apply</button>
-          <button id="btn-clear" class="btn-clear">Clear</button>
+          <button id="btn-apply">Aplicar</button>
+          <button id="btn-clear" class="btn-clear">Limpiar</button>
         </div>
 
         <div class="table-wrap">
           <table class="data-table">
             <thead>
               <tr>
-                <th>Timestamp</th>
-                <th>Source</th>
-                <th>Event type</th>
-                <th>External event ID</th>
-                <th>Error</th>
+                <th>Fecha y hora</th>
+                <th>Origen</th>
+                <th>Tipo de evento</th>
+                <th>ID externo</th>
+                <th>Mensaje de error</th>
               </tr>
             </thead>
             <tbody>
               ${res.data.length === 0
-                ? `<tr><td colspan="5" class="muted" style="text-align:center;padding:2rem">No failed events found</td></tr>`
+                ? `<tr><td colspan="5" class="muted" style="text-align:center;padding:2.5rem">No se encontraron eventos fallidos</td></tr>`
                 : res.data.map(row => `
                   <tr class="clickable" data-id="${esc(row.id)}">
                     <td>${fmtDate(row.created_at)}</td>
@@ -92,17 +100,17 @@ export async function renderErrors(container: HTMLElement): Promise<void> {
       </section>
     `;
 
-    // Pagination
+    // Paginación
     container.querySelector("#pagination")!.replaceWith(
       buildPagination(res.total, LIMIT, offset, load)
     );
 
-    // Row click → full event detail
+    // Clic en fila → modal de detalle completo
     container.querySelectorAll<HTMLTableRowElement>("tr.clickable").forEach(row => {
       row.addEventListener("click", () => openErrorDetail(row.dataset.id!));
     });
 
-    // Filter controls
+    // Controles de filtro
     document.getElementById("btn-apply")!.addEventListener("click", () => {
       filter = {
         ...filter,
@@ -128,33 +136,33 @@ async function openErrorDetail(id: string): Promise<void> {
 
   const html = `
     <div class="detail-section">
-      <h4>Event metadata</h4>
+      <h4>Metadatos del evento</h4>
       <div class="kv-grid">
-        <span class="key">ID</span>            <span>${esc(event.id)}</span>
-        <span class="key">Source</span>        <span><code>${esc(event.webhook_source)}</code></span>
-        <span class="key">Event type</span>    <span><code>${esc(event.event_type)}</code></span>
-        <span class="key">Status</span>        <span>${statusBadge(event.status)}</span>
-        <span class="key">External ID</span>   <span><code>${esc(event.external_event_id)}</code></span>
-        <span class="key">Idempotency key</span><span><code>${esc(event.idempotency_key)}</code></span>
-        <span class="key">Created</span>       <span>${fmtDate(event.created_at)}</span>
-        <span class="key">Processed</span>     <span>${fmtDate(event.processed_at)}</span>
+        <span class="key">ID interno</span>          <span>${esc(event.id)}</span>
+        <span class="key">Origen</span>               <span><code>${esc(event.webhook_source)}</code></span>
+        <span class="key">Tipo de evento</span>       <span><code>${esc(event.event_type)}</code></span>
+        <span class="key">Estado</span>               <span>${statusBadge(event.status)}</span>
+        <span class="key">ID externo</span>           <span><code>${esc(event.external_event_id)}</code></span>
+        <span class="key">Clave de idempotencia</span><span><code>${esc(event.idempotency_key)}</code></span>
+        <span class="key">Recibido</span>             <span>${fmtDate(event.created_at)}</span>
+        <span class="key">Procesado</span>            <span>${fmtDate(event.processed_at)}</span>
       </div>
     </div>
 
     <div class="detail-section">
-      <h4>Error message</h4>
+      <h4>Mensaje de error</h4>
       <p class="text-danger" style="font-size:13px;line-height:1.6">
-        ${esc(event.error_message ?? "No error message stored")}
+        ${esc(event.error_message ?? "Sin mensaje de error almacenado")}
       </p>
     </div>
 
     <div class="detail-section">
-      <h4>Raw payload (as received)</h4>
+      <h4>Payload recibido</h4>
       <pre class="payload-pre">${esc(prettyJson(event.payload))}</pre>
     </div>
   `;
 
-  openModal(`Failed event — ${event.event_type}`, html);
+  openModal(`Evento fallido — ${event.event_type}`, html);
 }
 
 function toIso(input: HTMLInputElement): string | undefined {

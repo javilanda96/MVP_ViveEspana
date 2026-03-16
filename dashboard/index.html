@@ -1,47 +1,49 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Ops Dashboard</title>
+  <title>Panel de Operaciones</title>
   <link rel="stylesheet" href="./src/styles.css" />
 </head>
 <body>
 
-  <!-- ── Login screen ─────────────────────────────────────────────────────── -->
+  <!-- ── Pantalla de inicio de sesión ────────────────────────────────────── -->
   <div id="login-screen">
     <div class="login-card">
-      <h1>Ops Dashboard</h1>
-      <p class="login-sub">Enter your admin key to continue</p>
+      <div class="login-logo">⚙</div>
+      <h1>Panel de Operaciones</h1>
+      <p class="login-sub">Introduce tu clave de administrador para acceder al panel interno.</p>
       <form id="login-form">
         <input
           type="password"
           id="admin-key"
-          placeholder="Admin API key"
+          placeholder="Clave de administrador"
           autocomplete="current-password"
           required
         />
-        <button type="submit" id="login-btn">Sign in</button>
-        <p id="login-error" class="error" style="display:none">
-          Invalid key — try again
+        <button type="submit" id="login-btn">Acceder</button>
+        <p id="login-error" class="error" style="display:none;margin-top:.6rem;font-size:13px">
+          Clave incorrecta — inténtalo de nuevo
         </p>
       </form>
     </div>
   </div>
 
-  <!-- ── Main app (shown after login) ─────────────────────────────────────── -->
+  <!-- ── Aplicación principal (visible tras el inicio de sesión) ──────────── -->
   <div id="main-app" style="display:none">
     <header>
       <div class="header-inner">
-        <span class="brand">Ops Dashboard</span>
+        <span class="brand">Panel de Operaciones</span>
+        <div class="brand-sep"></div>
         <nav id="tab-nav">
-          <button class="tab-btn active" data-page="overview">Overview</button>
-          <button class="tab-btn"        data-page="logs">Logs</button>
-          <button class="tab-btn"        data-page="errors">Errors</button>
+          <button class="tab-btn active" data-page="overview">Resumen</button>
+          <button class="tab-btn"        data-page="logs">Registros</button>
+          <button class="tab-btn"        data-page="errors">Errores</button>
           <button class="tab-btn"        data-page="pipeline">Pipeline</button>
-          <button class="tab-btn"        data-page="integrations">Integrations</button>
+          <button class="tab-btn"        data-page="integrations">Integraciones</button>
         </nav>
-        <button id="logout-btn">Sign out</button>
+        <button id="logout-btn">Cerrar sesión</button>
       </div>
     </header>
     <main id="page-content"></main>

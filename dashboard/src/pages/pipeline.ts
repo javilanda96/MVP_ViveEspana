@@ -3,6 +3,13 @@ import { fmtDate, esc, buildPagination } from "../utils.js";
 
 const LIMIT = 50;
 
+const STATUS_ES: Record<string, string> = {
+  open:      "Abierta",
+  won:       "Ganada",
+  lost:      "Perdida",
+  abandoned: "Abandonada",
+};
+
 export async function renderPipeline(container: HTMLElement): Promise<void> {
   let filter: PipelineFilter = { limit: LIMIT, offset: 0 };
 
@@ -17,44 +24,50 @@ export async function renderPipeline(container: HTMLElement): Promise<void> {
 
     container.innerHTML = `
       <section class="page">
-        <h2>Pipeline</h2>
+        <h2>Pipeline de oportunidades</h2>
+        <p class="page-desc">
+          Vista del pipeline de oportunidades sincronizado desde el CRM. Permite consultar
+          el estado actual de cada oportunidad, la fase en la que se encuentra, su valor
+          económico y los pagos completados asociados al contacto. Usa los filtros para
+          acotar por estado o nombre de pipeline.
+        </p>
 
         <div class="filters">
-          <label>Status
+          <label>Estado
             <select id="f-status">
-              <option value="">All</option>
-              <option value="open"      ${filter.status === "open"      ? "selected" : ""}>open</option>
-              <option value="won"       ${filter.status === "won"       ? "selected" : ""}>won</option>
-              <option value="lost"      ${filter.status === "lost"      ? "selected" : ""}>lost</option>
-              <option value="abandoned" ${filter.status === "abandoned" ? "selected" : ""}>abandoned</option>
+              <option value="">Todos</option>
+              <option value="open"      ${filter.status === "open"      ? "selected" : ""}>Abierta</option>
+              <option value="won"       ${filter.status === "won"       ? "selected" : ""}>Ganada</option>
+              <option value="lost"      ${filter.status === "lost"      ? "selected" : ""}>Perdida</option>
+              <option value="abandoned" ${filter.status === "abandoned" ? "selected" : ""}>Abandonada</option>
             </select>
           </label>
           <label>Pipeline
-            <input type="text" id="f-pipeline" placeholder="pipeline name" value="${esc(filter.pipeline_name ?? "")}" />
+            <input type="text" id="f-pipeline" placeholder="nombre del pipeline" value="${esc(filter.pipeline_name ?? "")}" />
           </label>
-          <button id="btn-apply">Apply</button>
-          <button id="btn-clear" class="btn-clear">Clear</button>
+          <button id="btn-apply">Aplicar</button>
+          <button id="btn-clear" class="btn-clear">Limpiar</button>
         </div>
 
         <div class="table-wrap">
           <table class="data-table">
             <thead>
               <tr>
-                <th>Opportunity</th>
-                <th>Contact</th>
+                <th>Oportunidad</th>
+                <th>Contacto</th>
                 <th>Email</th>
                 <th>Pipeline</th>
-                <th>Stage</th>
-                <th>Status</th>
-                <th>Value</th>
-                <th>Payments</th>
-                <th>Collected</th>
-                <th>Created</th>
+                <th>Fase</th>
+                <th>Estado</th>
+                <th>Valor</th>
+                <th>Pagos</th>
+                <th>Total cobrado</th>
+                <th>Fecha alta</th>
               </tr>
             </thead>
             <tbody>
               ${res.data.length === 0
-                ? `<tr><td colspan="10" class="muted" style="text-align:center;padding:2rem">No opportunities found</td></tr>`
+                ? `<tr><td colspan="10" class="muted" style="text-align:center;padding:2.5rem">No se encontraron oportunidades con los filtros aplicados</td></tr>`
                 : res.data.map(row => `
                   <tr>
                     <td>${esc(row.opportunity_name)}</td>
@@ -62,7 +75,7 @@ export async function renderPipeline(container: HTMLElement): Promise<void> {
                     <td>${esc(row.contact_email)}</td>
                     <td>${esc(row.pipeline_name)}</td>
                     <td>${esc(row.stage_name)}</td>
-                    <td><span class="badge ${statusClass(row.status)}">${esc(row.status)}</span></td>
+                    <td><span class="badge ${statusClass(row.status)}">${esc(STATUS_ES[row.status] ?? row.status)}</span></td>
                     <td>${fmtMoney(row.monetary_value, row.currency)}</td>
                     <td style="text-align:center">${row.payments_count}</td>
                     <td>${fmtMoney(row.total_payments_amount, row.currency)}</td>
@@ -77,9 +90,9 @@ export async function renderPipeline(container: HTMLElement): Promise<void> {
         <div id="pagination"></div>
 
         <p class="note">
-          Data sourced from the <code>opportunity_overview</code> view.
-          Collected payments reflect all succeeded payments linked to the same contact,
-          not exclusively to this opportunity.
+          Los datos provienen de la vista <code>opportunity_overview</code>.
+          El importe total cobrado refleja todos los pagos completados vinculados al
+          mismo contacto, no exclusivamente a esta oportunidad.
         </p>
       </section>
     `;

@@ -1,4 +1,4 @@
-/** Format an ISO timestamp to a short locale string, or "—" if absent. */
+/** Formatea una marca de tiempo ISO a cadena localizada corta, o "—" si no existe. */
 export function fmtDate(iso: string | null | undefined): string {
   if (!iso) return "—";
   return new Date(iso).toLocaleString("es-ES", {
@@ -7,7 +7,7 @@ export function fmtDate(iso: string | null | undefined): string {
   });
 }
 
-/** Escape HTML special characters to prevent injection via DB content. */
+/** Escapa caracteres especiales HTML para evitar inyección mediante contenido de la BD. */
 export function esc(s: unknown): string {
   if (s === null || s === undefined) return "—";
   return String(s)
@@ -17,38 +17,43 @@ export function esc(s: unknown): string {
     .replace(/"/g, "&quot;");
 }
 
-/** Render a status badge span. */
+/** Renderiza un badge de estado. */
 export function statusBadge(status: string): string {
+  const labels: Record<string, string> = {
+    processed: "procesado",
+    failed:    "fallido",
+    received:  "recibido",
+  };
   const cls =
     status === "processed" ? "badge-processed" :
     status === "failed"    ? "badge-failed"    :
                              "badge-received";
-  return `<span class="badge ${cls}">${esc(status)}</span>`;
+  return `<span class="badge ${cls}">${esc(labels[status] ?? status)}</span>`;
 }
 
-/** Build a pagination control element. */
+/** Construye un control de paginación. */
 export function buildPagination(
-  total:    number,
-  limit:    number,
-  offset:   number,
-  onNav:    (newOffset: number) => void
+  total:  number,
+  limit:  number,
+  offset: number,
+  onNav:  (newOffset: number) => void
 ): HTMLElement {
-  const wrap  = document.createElement("div");
+  const wrap = document.createElement("div");
   wrap.className = "pagination";
 
   const totalPages = Math.ceil(total / limit) || 1;
   const page       = Math.floor(offset / limit) + 1;
 
   const prev = document.createElement("button");
-  prev.textContent = "← Prev";
+  prev.textContent = "← Anterior";
   prev.disabled    = offset === 0;
   prev.addEventListener("click", () => onNav(Math.max(0, offset - limit)));
 
   const info = document.createElement("span");
-  info.textContent = `Page ${page} of ${totalPages}  (${total} total)`;
+  info.textContent = `Página ${page} de ${totalPages}  (${total} en total)`;
 
   const next = document.createElement("button");
-  next.textContent = "Next →";
+  next.textContent = "Siguiente →";
   next.disabled    = offset + limit >= total;
   next.addEventListener("click", () => onNav(offset + limit));
 
@@ -56,7 +61,7 @@ export function buildPagination(
   return wrap;
 }
 
-/** Pretty-print JSON for the payload viewer. */
+/** Devuelve el JSON con sangría para el visor de payloads. */
 export function prettyJson(obj: unknown): string {
   try {
     return JSON.stringify(obj, null, 2);

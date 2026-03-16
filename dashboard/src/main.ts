@@ -1,16 +1,17 @@
 /**
- * Dashboard entry point.
+ * Punto de entrada del panel de operaciones.
  *
- * Flow:
- *   1. Page loads → tries GET /admin/stats to check session cookie validity.
- *   2. If 401  → show login form.
- *   3. Login form POSTs key to /admin/login → server sets HttpOnly cookie → show app.
- *   4. Tab clicks navigate between pages without reloading.
- *   5. Any page that gets a 401 from the API re-shows the login form.
+ * Flujo:
+ *   1. La página carga → intenta GET /admin/stats para comprobar la sesión.
+ *   2. Si recibe 401  → muestra el formulario de inicio de sesión.
+ *   3. El formulario envía la clave a /admin/login → el servidor emite una
+ *      cookie HttpOnly → se muestra la aplicación.
+ *   4. Los clics en las pestañas navegan entre páginas sin recargar.
+ *   5. Cualquier página que reciba un 401 de la API vuelve a mostrar el login.
  *
- * ADMIN_API_KEY is never present in this file or in any built asset.
- * The key is entered in the login form, sent once over HTTPS, and then
- * only the server-issued HttpOnly session cookie is used thereafter.
+ * ADMIN_API_KEY nunca está presente en este fichero ni en ningún asset compilado.
+ * La clave se introduce en el formulario, se envía una sola vez por HTTPS y
+ * a partir de ese momento sólo se usa la cookie de sesión HttpOnly del servidor.
  */
 
 import { checkAuth, login, logout, UnauthorizedError } from "./api.js";
@@ -20,7 +21,7 @@ import { renderErrors }       from "./pages/errors.js";
 import { renderPipeline }     from "./pages/pipeline.js";
 import { renderIntegrations } from "./pages/integrations.js";
 
-// ─── Page registry ────────────────────────────────────────────────────────────
+// ─── Registro de páginas ───────────────────────────────────────────────────────
 
 type PageRenderer = (container: HTMLElement) => Promise<void>;
 
@@ -62,7 +63,7 @@ async function navigateTo(page: string): Promise<void> {
   setActiveTab(page);
 
   const el = content();
-  el.innerHTML = `<p class="loading">Loading…</p>`;
+  el.innerHTML = `<p class="loading">Cargando…</p>`;
 
   try {
     await PAGES[page]?.(el);
@@ -72,20 +73,20 @@ async function navigateTo(page: string): Promise<void> {
       return;
     }
     el.innerHTML = `<p class="error" style="padding:2rem">
-      Failed to load page: ${err instanceof Error ? err.message : String(err)}
+      Error al cargar la página: ${err instanceof Error ? err.message : String(err)}
     </p>`;
   }
 }
 
-// ─── Event wiring ─────────────────────────────────────────────────────────────
+// ─── Eventos ──────────────────────────────────────────────────────────────────
 
-// Tab navigation
+// Navegación por pestañas
 document.getElementById("tab-nav")!.addEventListener("click", (e) => {
   const btn = (e.target as HTMLElement).closest<HTMLButtonElement>(".tab-btn");
   if (btn?.dataset.page) navigateTo(btn.dataset.page);
 });
 
-// Login form
+// Formulario de inicio de sesión
 document.getElementById("login-form")!.addEventListener("submit", async (e) => {
   e.preventDefault();
 
@@ -93,35 +94,35 @@ document.getElementById("login-form")!.addEventListener("submit", async (e) => {
   const errEl     = document.getElementById("login-error")!;
   const submitBtn = document.getElementById("login-btn") as HTMLButtonElement;
 
-  errEl.style.display  = "none";
-  submitBtn.disabled   = true;
-  submitBtn.textContent = "Signing in…";
+  errEl.style.display   = "none";
+  submitBtn.disabled    = true;
+  submitBtn.textContent = "Iniciando sesión…";
 
   try {
     const ok = await login(keyInput.value);
     if (ok) {
-      keyInput.value = "";   // clear key from DOM immediately
+      keyInput.value = "";   // limpiar la clave del DOM inmediatamente
       showApp();
     } else {
       errEl.style.display   = "block";
       submitBtn.disabled    = false;
-      submitBtn.textContent = "Sign in";
+      submitBtn.textContent = "Acceder";
     }
   } catch {
-    errEl.textContent     = "Network error — is the server running?";
+    errEl.textContent     = "Error de red — ¿el servidor está en marcha?";
     errEl.style.display   = "block";
     submitBtn.disabled    = false;
-    submitBtn.textContent = "Sign in";
+    submitBtn.textContent = "Acceder";
   }
 });
 
-// Logout button
+// Botón de cierre de sesión
 document.getElementById("logout-btn")!.addEventListener("click", async () => {
   await logout();
   showLogin();
 });
 
-// ─── Bootstrap ────────────────────────────────────────────────────────────────
+// ─── Arranque ─────────────────────────────────────────────────────────────────
 
 (async () => {
   const authed = await checkAuth();

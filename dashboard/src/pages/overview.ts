@@ -9,44 +9,49 @@ export async function renderOverview(container: HTMLElement): Promise<void> {
 
   container.innerHTML = `
     <section class="page">
-      <h2>Overview</h2>
+      <h2>Resumen</h2>
+      <p class="page-desc">
+        Visión general de la actividad reciente del sistema de integración: volumen de eventos,
+        errores detectados, estado del pipeline de oportunidades e importes cobrados.
+        Los datos se actualizan en cada visita a esta pantalla.
+      </p>
 
       <div class="kpi-grid">
         <div class="kpi-card">
           <div class="kpi-value">${stats.total24h}</div>
-          <div class="kpi-label">Events (last 24 h)</div>
+          <div class="kpi-label">Eventos procesados<br>(últimas 24 h)</div>
         </div>
         <div class="kpi-card${stats.failed24h > 0 ? " alert" : ""}">
           <div class="kpi-value">${stats.failed24h}</div>
-          <div class="kpi-label">Failed (last 24 h)</div>
+          <div class="kpi-label">Eventos fallidos<br>(últimas 24 h)</div>
         </div>
         <div class="kpi-card${Number(stats.failureRate24h) > 10 ? " alert" : ""}">
           <div class="kpi-value">${stats.failureRate24h}%</div>
-          <div class="kpi-label">Failure rate (24 h)</div>
+          <div class="kpi-label">Tasa de error<br>(últimas 24 h)</div>
         </div>
         <div class="kpi-card">
           <div class="kpi-value">${stats.openOpportunities}</div>
-          <div class="kpi-label">Open opportunities</div>
+          <div class="kpi-label">Oportunidades<br>abiertas</div>
         </div>
         <div class="kpi-card">
           <div class="kpi-value">€${fmtMoney(stats.totalPaymentsAmount)}</div>
-          <div class="kpi-label">Payments collected (succeeded)</div>
+          <div class="kpi-label">Pagos cobrados<br>(completados)</div>
         </div>
       </div>
 
-      <h3>Integration Activity</h3>
+      <h3>Actividad de integraciones</h3>
 
       <div class="table-wrap">
         <table class="data-table">
           <thead>
             <tr>
-              <th>Integration</th>
+              <th>Integración</th>
               <th>Endpoint</th>
-              <th>Auth</th>
-              <th>Secret</th>
-              <th>Last seen</th>
-              <th>Events (24 h)</th>
-              <th>Failed (24 h)</th>
+              <th>Autenticación</th>
+              <th>Secreto</th>
+              <th>Última actividad</th>
+              <th>Eventos (24 h)</th>
+              <th>Fallos (24 h)</th>
             </tr>
           </thead>
           <tbody>
@@ -56,8 +61,8 @@ export async function renderOverview(container: HTMLElement): Promise<void> {
                 <td><code>${esc(i.endpoint)}</code></td>
                 <td>${esc(i.authType)}</td>
                 <td>${i.secretPresent
-                  ? `<span class="ok">✓ Present</span>`
-                  : `<span class="warn">✗ Missing</span>`
+                  ? `<span class="ok">✓ Configurado</span>`
+                  : `<span class="warn">✗ No configurado</span>`
                 }</td>
                 <td>${fmtDate(i.lastSeen)}</td>
                 <td>${i.total24h}</td>
@@ -69,11 +74,13 @@ export async function renderOverview(container: HTMLElement): Promise<void> {
       </div>
 
       <p class="note">
-        ⚠ Integration activity is inferred from <strong>events_log</strong> records only.
-        Events rejected before reaching the service layer (auth failures, schema validation errors)
-        are <strong>not counted here</strong> and are not visible in this dashboard.
-        Infrastructure metrics, external provider status, and Pino runtime logs
-        are also outside the visibility of this panel.
+        ⚠ <strong>Límite de visibilidad:</strong>
+        La actividad mostrada se deduce exclusivamente de los registros almacenados en
+        <code>events_log</code>. Las solicitudes rechazadas antes de llegar a la capa de servicio
+        (errores de autenticación, validación de esquema) <strong>no se contabilizan aquí</strong>
+        y no son visibles en este panel. Las métricas de infraestructura, el estado de los
+        proveedores externos y los logs de Pino en tiempo de ejecución también quedan fuera
+        del alcance de este panel.
       </p>
     </section>
   `;

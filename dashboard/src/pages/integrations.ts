@@ -11,22 +11,22 @@ export async function renderIntegrations(container: HTMLElement): Promise<void> 
         <span class="key">Endpoint</span>
         <span><code>${esc(i.endpoint)}</code></span>
 
-        <span class="key">Auth type</span>
+        <span class="key">Tipo de autenticación</span>
         <span>${esc(i.authType)}</span>
 
-        <span class="key">Secret</span>
+        <span class="key">Secreto</span>
         <span>${i.secretPresent
-          ? `<span class="ok">✓ Present</span>`
-          : `<span class="warn">✗ Not set (permissive dev mode)</span>`
+          ? `<span class="ok">✓ Configurado</span>`
+          : `<span class="warn">✗ Sin configurar (modo permisivo)</span>`
         }</span>
 
-        <span class="key">Last seen</span>
+        <span class="key">Última actividad</span>
         <span>${fmtDate(i.lastSeen)}</span>
 
-        <span class="key">Events (24 h)</span>
+        <span class="key">Eventos (24 h)</span>
         <span>${i.total24h}</span>
 
-        <span class="key">Failed (24 h)</span>
+        <span class="key">Fallos (24 h)</span>
         <span class="${i.failed24h > 0 ? "text-danger" : ""}">${i.failed24h}</span>
       </div>
     </div>
@@ -34,11 +34,13 @@ export async function renderIntegrations(container: HTMLElement): Promise<void> 
 
   container.innerHTML = `
     <section class="page">
-      <h2>Integrations</h2>
-
-      <p class="muted" style="margin-bottom:1rem;font-size:13px">
-        Read-only registry of the three hardcoded webhook integrations.
-        Activity is inferred from <code>events_log</code> — not from live provider health probes.
+      <h2>Integraciones</h2>
+      <p class="page-desc">
+        Registro de las integraciones activas del sistema y su actividad reciente.
+        Cada tarjeta muestra el endpoint configurado, el tipo de autenticación, si el
+        secreto de verificación está presente y el volumen de eventos recibidos en las
+        últimas 24 horas. La actividad se infiere de los registros almacenados, no de
+        sondeos en tiempo real a los proveedores externos.
       </p>
 
       <div class="integration-grid">
@@ -46,12 +48,13 @@ export async function renderIntegrations(container: HTMLElement): Promise<void> 
       </div>
 
       <p class="note">
-        ⚠ <strong>Visibility limits:</strong>
-        "Last seen" reflects the most recent event that was persisted in <code>events_log</code>.
-        A long gap may indicate provider inactivity, a workflow misconfiguration on the GHL side,
-        or delivery failures that were rejected before reaching the service layer (which are never logged).
-        There are no end-to-end health probes — this panel cannot confirm that external providers
-        are currently operational.
+        ⚠ <strong>Límite de visibilidad:</strong>
+        «Última actividad» refleja el evento más reciente persistido en <code>events_log</code>.
+        Una brecha prolongada puede indicar inactividad del proveedor, una configuración
+        incorrecta del workflow en GHL, o fallos de entrega rechazados antes de llegar
+        a la capa de servicio (que nunca se registran). Este panel no realiza sondeos
+        de salud extremo a extremo: no puede confirmar que los proveedores externos
+        estén operativos en este momento.
       </p>
     </section>
   `;

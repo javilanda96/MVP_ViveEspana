@@ -13,55 +13,60 @@ export async function renderLogs(container: HTMLElement): Promise<void> {
 
     container.innerHTML = `
       <section class="page">
-        <h2>Execution Logs</h2>
+        <h2>Registro de eventos</h2>
+        <p class="page-desc">
+          Listado completo de los eventos recibidos y procesados por el sistema. Utiliza los
+          filtros para localizar un evento concreto por origen, estado, tipo o identificador
+          externo. Haz clic en cualquier fila para ver el detalle completo y el payload original.
+        </p>
 
         <div class="filters" id="log-filters">
-          <label>Source
+          <label>Origen
             <select id="f-source">
-              <option value="">All</option>
+              <option value="">Todos</option>
               <option value="ghl"    ${filter.source === "ghl"    ? "selected" : ""}>GHL</option>
               <option value="stripe" ${filter.source === "stripe" ? "selected" : ""}>Stripe</option>
             </select>
           </label>
-          <label>Status
+          <label>Estado
             <select id="f-status">
-              <option value="">All</option>
-              <option value="processed" ${filter.status === "processed" ? "selected" : ""}>processed</option>
-              <option value="failed"    ${filter.status === "failed"    ? "selected" : ""}>failed</option>
-              <option value="received"  ${filter.status === "received"  ? "selected" : ""}>received</option>
+              <option value="">Todos</option>
+              <option value="processed" ${filter.status === "processed" ? "selected" : ""}>Procesado</option>
+              <option value="failed"    ${filter.status === "failed"    ? "selected" : ""}>Fallido</option>
+              <option value="received"  ${filter.status === "received"  ? "selected" : ""}>Recibido</option>
             </select>
           </label>
-          <label>Event type
-            <input type="text" id="f-event-type" placeholder="e.g. payment.created" value="${esc(filter.event_type ?? "")}" />
+          <label>Tipo de evento
+            <input type="text" id="f-event-type" placeholder="p. ej. payment.created" value="${esc(filter.event_type ?? "")}" />
           </label>
-          <label>External event ID
-            <input type="text" id="f-ext-id" placeholder="exact match" value="${esc(filter.external_event_id ?? "")}" />
+          <label>ID externo del evento
+            <input type="text" id="f-ext-id" placeholder="coincidencia exacta" value="${esc(filter.external_event_id ?? "")}" />
           </label>
-          <label>From
+          <label>Desde
             <input type="datetime-local" id="f-from" value="${filter.from ?? ""}" />
           </label>
-          <label>To
+          <label>Hasta
             <input type="datetime-local" id="f-to"   value="${filter.to   ?? ""}" />
           </label>
-          <button id="btn-apply">Apply</button>
-          <button id="btn-clear" class="btn-clear">Clear</button>
+          <button id="btn-apply">Aplicar</button>
+          <button id="btn-clear" class="btn-clear">Limpiar</button>
         </div>
 
         <div class="table-wrap">
           <table class="data-table">
             <thead>
               <tr>
-                <th>Timestamp</th>
-                <th>Source</th>
-                <th>Event type</th>
-                <th>Status</th>
-                <th>External event ID</th>
+                <th>Fecha y hora</th>
+                <th>Origen</th>
+                <th>Tipo de evento</th>
+                <th>Estado</th>
+                <th>ID externo</th>
                 <th>Error</th>
               </tr>
             </thead>
             <tbody>
               ${res.data.length === 0
-                ? `<tr><td colspan="6" class="muted" style="text-align:center;padding:2rem">No events found</td></tr>`
+                ? `<tr><td colspan="6" class="muted" style="text-align:center;padding:2.5rem">No se encontraron eventos con los filtros aplicados</td></tr>`
                 : res.data.map(row => `
                   <tr class="clickable" data-id="${esc(row.id)}">
                     <td>${fmtDate(row.created_at)}</td>
@@ -82,23 +87,24 @@ export async function renderLogs(container: HTMLElement): Promise<void> {
         <div id="pagination"></div>
 
         <p class="note">
-          ⚠ This log only shows events that reached the service layer and were persisted.
-          Auth-rejected requests and schema validation failures do not appear here.
+          ⚠ Este registro muestra únicamente los eventos que alcanzaron la capa de servicio
+          y fueron persistidos. Las solicitudes rechazadas por autenticación (401) o por
+          fallos de validación de esquema (400) no aparecen aquí.
         </p>
       </section>
     `;
 
-    // Pagination
+    // Paginación
     container.querySelector("#pagination")!.replaceWith(
       buildPagination(res.total, LIMIT, offset, load)
     );
 
-    // Row click → detail modal
+    // Clic en fila → modal de detalle
     container.querySelectorAll<HTMLTableRowElement>("tr.clickable").forEach(row => {
       row.addEventListener("click", () => openEventDetail(row.dataset.id!));
     });
 
-    // Filter controls
+    // Controles de filtro
     document.getElementById("btn-apply")!.addEventListener("click", () => {
       filter = {
         ...filter,
@@ -127,33 +133,33 @@ async function openEventDetail(id: string): Promise<void> {
 
   const html = `
     <div class="detail-section">
-      <h4>Event metadata</h4>
+      <h4>Metadatos del evento</h4>
       <div class="kv-grid">
-        <span class="key">ID</span>           <span>${esc(event.id)}</span>
-        <span class="key">Source</span>       <span><code>${esc(event.webhook_source)}</code></span>
-        <span class="key">Event type</span>   <span><code>${esc(event.event_type)}</code></span>
-        <span class="key">Status</span>       <span>${statusBadge(event.status)}</span>
-        <span class="key">External ID</span>  <span><code>${esc(event.external_event_id)}</code></span>
-        <span class="key">Idempotency key</span><span><code>${esc(event.idempotency_key)}</code></span>
-        <span class="key">Created</span>      <span>${fmtDate(event.created_at)}</span>
-        <span class="key">Processed</span>    <span>${fmtDate(event.processed_at)}</span>
+        <span class="key">ID interno</span>         <span>${esc(event.id)}</span>
+        <span class="key">Origen</span>              <span><code>${esc(event.webhook_source)}</code></span>
+        <span class="key">Tipo de evento</span>      <span><code>${esc(event.event_type)}</code></span>
+        <span class="key">Estado</span>              <span>${statusBadge(event.status)}</span>
+        <span class="key">ID externo</span>          <span><code>${esc(event.external_event_id)}</code></span>
+        <span class="key">Clave de idempotencia</span><span><code>${esc(event.idempotency_key)}</code></span>
+        <span class="key">Recibido</span>            <span>${fmtDate(event.created_at)}</span>
+        <span class="key">Procesado</span>           <span>${fmtDate(event.processed_at)}</span>
       </div>
     </div>
 
     ${event.error_message ? `
       <div class="detail-section">
-        <h4>Error message</h4>
-        <p class="text-danger" style="font-size:13px">${esc(event.error_message)}</p>
+        <h4>Mensaje de error</h4>
+        <p class="text-danger" style="font-size:13px;line-height:1.6">${esc(event.error_message)}</p>
       </div>
     ` : ""}
 
     <div class="detail-section">
-      <h4>Raw payload</h4>
+      <h4>Payload recibido</h4>
       <pre class="payload-pre">${esc(prettyJson(event.payload))}</pre>
     </div>
   `;
 
-  openModal(`Event — ${event.event_type}`, html);
+  openModal(`Evento — ${event.event_type}`, html);
 }
 
 function toIso(input: HTMLInputElement): string | undefined {
