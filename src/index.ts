@@ -1,10 +1,15 @@
 import "dotenv/config";
 import { config } from "./config.js"; // must be first after dotenv — runs validateEnv()
-import Fastify from "fastify";
+import { fileURLToPath } from "url";
+import { dirname, join }  from "path";
+import { existsSync }     from "fs";
+import Fastify            from "fastify";
+import fastifyStatic      from "@fastify/static";
 import { checkDatabaseConnection } from "./lib/supabase.js";
-import { contactRoutes } from "./routes/contacts.js";
-import { paymentRoutes } from "./routes/payments.js";
+import { contactRoutes }     from "./routes/contacts.js";
+import { paymentRoutes }     from "./routes/payments.js";
 import { opportunityRoutes } from "./routes/opportunities.js";
+import { adminRoutes }       from "./routes/admin.js";
 
 // Expose rawBody on every request so webhook signature preHandlers can read
 // the exact bytes Stripe signed, before Fastify re-serialises the parsed body.
@@ -58,13 +63,46 @@ fastify.addContentTypeParser(
   { parseAs: "buffer" },
   function (req, body, done) {
     try {
-      req.rawBody = body;
+      req.rawBody = body as Buffer;
       done(null, JSON.parse(body.toString("utf8")));
     } catch (err) {
       done(err instanceof Error ? err : new Error(String(err)), undefined);
     }
   }
 );
+
+// ============================================================================
+// DASHBOARD — static assets
+// ============================================================================
+//
+// Serves the pre-built Vite dashboard from dashboard/dist/.
+// Build with: cd dashboard && npm run build
+//
+// Uses import.meta.url so the path resolves correctly whether the server is
+// started via tsx (src/) or compiled node (dist/).
+const __filename    = fileURLToPath(import.meta.url);
+const __dirname     = dirname(__filename);
+const dashboardRoot = join(__dirname, "..", "dashboard", "dist");
+
+if (existsSync(dashboardRoot)) {
+  fastify.register(fastifyStatic, {
+    root:           dashboardRoot,
+    prefix:         "/dashboard/",
+    decorateReply:  false,
+  });
+
+  // Convenience redirect: /dashboard → /dashboard/
+  fastify.get("/dashboard", async (_req, reply) => {
+    return reply.redirect(302, "/dashboard/");
+  });
+
+  fastify.log.info("Dashboard available at /dashboard/");
+} else {
+  fastify.log.warn(
+    "dashboard/dist not found — dashboard unavailable. " +
+    "Run: cd dashboard && npm install && npm run build"
+  );
+}
 
 // ============================================================================
 // HEALTH CHECK
@@ -87,6 +125,7 @@ fastify.get("/health", async () => {
 fastify.register(contactRoutes);
 fastify.register(paymentRoutes);
 fastify.register(opportunityRoutes);
+fastify.register(adminRoutes);
 
 // PENDING:
 // POST /webhooks/subscriptions (Stripe)

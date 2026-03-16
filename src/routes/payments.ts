@@ -55,7 +55,7 @@ export async function paymentRoutes(fastify: FastifyInstance): Promise<void> {
       try {
         const payment = await processPayment(
           body,
-          body as Record<string, unknown>
+          body as unknown as Record<string, unknown>
         );
 
         fastify.log.info(

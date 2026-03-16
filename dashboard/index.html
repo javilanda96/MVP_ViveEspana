@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ops Dashboard</title>
+  <link rel="stylesheet" href="./src/styles.css" />
+</head>
+<body>
+
+  <!-- ── Login screen ─────────────────────────────────────────────────────── -->
+  <div id="login-screen">
+    <div class="login-card">
+      <h1>Ops Dashboard</h1>
+      <p class="login-sub">Enter your admin key to continue</p>
+      <form id="login-form">
+        <input
+          type="password"
+          id="admin-key"
+          placeholder="Admin API key"
+          autocomplete="current-password"
+          required
+        />
+        <button type="submit" id="login-btn">Sign in</button>
+        <p id="login-error" class="error" style="display:none">
+          Invalid key — try again
+        </p>
+      </form>
+    </div>
+  </div>
+
+  <!-- ── Main app (shown after login) ─────────────────────────────────────── -->
+  <div id="main-app" style="display:none">
+    <header>
+      <div class="header-inner">
+        <span class="brand">Ops Dashboard</span>
+        <nav id="tab-nav">
+          <button class="tab-btn active" data-page="overview">Overview</button>
+          <button class="tab-btn"        data-page="logs">Logs</button>
+          <button class="tab-btn"        data-page="errors">Errors</button>
+          <button class="tab-btn"        data-page="pipeline">Pipeline</button>
+          <button class="tab-btn"        data-page="integrations">Integrations</button>
+        </nav>
+        <button id="logout-btn">Sign out</button>
+      </div>
+    </header>
+    <main id="page-content"></main>
+  </div>
+
+  <script type="module" src="./src/main.ts"></script>
+</body>
+</html>
