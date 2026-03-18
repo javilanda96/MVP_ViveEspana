@@ -91,10 +91,9 @@ if (existsSync(dashboardRoot)) {
     decorateReply:  false,
   });
 
-  // Convenience redirect: /dashboard → /dashboard/
-  fastify.get("/dashboard", async (_req, reply) => {
-    return reply.redirect(302, "/dashboard/");
-  });
+  // Convenience redirects: / and /dashboard → /dashboard/
+  fastify.get("/",          async (_req, reply) => reply.redirect(302, "/dashboard/"));
+  fastify.get("/dashboard", async (_req, reply) => reply.redirect(302, "/dashboard/"));
 
   fastify.log.info("Dashboard available at /dashboard/");
 } else {
