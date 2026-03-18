@@ -1,13 +1,9 @@
 import { createClient } from "@supabase/supabase-js";
+import { config } from "../config.js";
 
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
-
-if (!supabaseUrl || !supabaseServiceKey) {
-  throw new Error("Missing SUPABASE_URL or SUPABASE_SERVICE_KEY in environment");
-}
-
-export const supabase = createClient(supabaseUrl, supabaseServiceKey);
+// config.ts validates SUPABASE_URL and SUPABASE_SERVICE_KEY at startup
+// via secrets.ts — no additional checks needed here.
+export const supabase = createClient(config.supabase.url, config.supabase.serviceKey);
 
 export async function checkDatabaseConnection(): Promise<boolean> {
   try {

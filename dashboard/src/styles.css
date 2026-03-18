@@ -444,6 +444,291 @@ code {
   padding-top: 2px;
 }
 
+/* ── Integration wizard ──────────────────────────────────────────────────────── */
+
+.wizard-steps {
+  display:      flex;
+  align-items:  center;
+  gap:          .25rem;
+  margin-bottom: 1.25rem;
+  flex-wrap:    wrap;
+}
+.ws-step {
+  display:     flex;
+  align-items: center;
+  gap:         .3rem;
+  font-size:   12px;
+  color:       var(--muted);
+  white-space: nowrap;
+}
+.ws-step.ws-active { color: var(--primary); font-weight: 600; }
+.ws-step.ws-done   { color: var(--text);    font-weight: 500; }
+.ws-num {
+  display:         inline-flex;
+  align-items:     center;
+  justify-content: center;
+  width:           20px;
+  height:          20px;
+  border-radius:   50%;
+  font-size:       11px;
+  font-weight:     600;
+  background:      var(--border);
+  color:           var(--muted);
+}
+.ws-active .ws-num { background: var(--primary); color: #fff; }
+.ws-done   .ws-num { background: var(--primary-dk, #2563eb); color: #fff; }
+.ws-sep { color: var(--border); font-size: 14px; }
+
+.form-group {
+  display:       flex;
+  flex-direction: column;
+  gap:           .25rem;
+  margin-bottom: .9rem;
+}
+.form-group label {
+  font-size:   13px;
+  font-weight: 500;
+  color:       var(--text);
+}
+.form-group input,
+.form-group select,
+.form-group textarea {
+  font-size:     13px;
+  padding:       6px 8px;
+  border:        1px solid var(--border);
+  border-radius: var(--r);
+  background:    var(--bg);
+  color:         var(--text);
+  width:         100%;
+  box-sizing:    border-box;
+}
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline:        none;
+  border-color:   var(--primary);
+  box-shadow:     0 0 0 2px rgba(59,130,246,.15);
+}
+.form-inline {
+  flex-direction: row;
+  align-items:    center;
+  gap:            .5rem;
+  margin-top:     .25rem;
+}
+.form-inline input[type="checkbox"] { width: auto; }
+.field-hint {
+  font-size:  12px;
+  color:      var(--muted);
+  margin:     0;
+  line-height: 1.4;
+}
+.req  { color: var(--danger, #dc2626); }
+.opt  { color: var(--muted); font-weight: 400; font-size: 11px; }
+
+.wizard-nav {
+  display:         flex;
+  justify-content: space-between;
+  align-items:     center;
+  margin-top:      1.25rem;
+  padding-top:     .9rem;
+  border-top:      1px solid var(--border);
+  gap:             .5rem;
+}
+.btn-primary {
+  background:    var(--primary);
+  color:         #fff;
+  border:        none;
+  border-radius: var(--r);
+  padding:       6px 16px;
+  font-size:     13px;
+  font-weight:   500;
+  cursor:        pointer;
+}
+.btn-primary:hover  { background: var(--primary-dk, #2563eb); }
+.btn-secondary {
+  background:    transparent;
+  color:         var(--text);
+  border:        1px solid var(--border);
+  border-radius: var(--r);
+  padding:       6px 14px;
+  font-size:     13px;
+  cursor:        pointer;
+}
+.btn-secondary:hover { background: var(--surface-2, #f1f5f9); }
+
+/* badge variants */
+.badge-ok  { background: #dcfce7; color: #166534; }
+.badge-off { background: #f1f5f9; color: var(--muted); }
+
+/* ── Connection explainer + how-it-works ─────────────────────────────────────── */
+.conn-explainer {
+  background:    var(--surface);
+  border:        1px solid var(--border);
+  border-radius: var(--r);
+  padding:       .9rem 1.1rem;
+  margin-bottom: 1.25rem;
+  display:       flex;
+  flex-direction: column;
+  gap:           .75rem;
+}
+.conn-explainer-text {
+  font-size:   13px;
+  color:       var(--muted);
+  line-height: 1.55;
+}
+.conn-explainer-text strong { color: var(--text); }
+.conn-explainer-text em     { font-style: normal; color: var(--text); font-weight: 500; }
+
+.how-it-works { display: flex; flex-direction: column; gap: .4rem; }
+.hiw-label    { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+
+.hiw-steps {
+  display:   flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap:       .4rem;
+}
+.hiw-step {
+  display:     flex;
+  align-items: center;
+  gap:         .35rem;
+  font-size:   12px;
+  color:       var(--text);
+}
+.hiw-num {
+  display:         inline-flex;
+  align-items:     center;
+  justify-content: center;
+  width:           20px;
+  height:          20px;
+  border-radius:   50%;
+  font-size:       11px;
+  font-weight:     700;
+  background:      var(--primary);
+  color:           #fff;
+  flex-shrink:     0;
+}
+.hiw-arrow { color: var(--border); font-size: 14px; }
+
+/* ── Per-card improvements ───────────────────────────────────────────────────── */
+.card-title-row {
+  display:         flex;
+  justify-content: space-between;
+  align-items:     flex-start;
+  gap:             .5rem;
+  padding-bottom:  .6rem;
+  border-bottom:   1px solid var(--border);
+}
+.card-name {
+  font-size:   1rem;
+  font-weight: 600;
+  color:       var(--text);
+  line-height: 1.3;
+}
+.card-title-actions {
+  display:     flex;
+  align-items: center;
+  gap:         .5rem;
+  flex-shrink: 0;
+}
+
+/* Status chips — derived only from observed data, never invented */
+.conn-status {
+  display:       inline-flex;
+  align-items:   center;
+  font-size:     11px;
+  font-weight:   600;
+  padding:       2px 8px;
+  border-radius: 999px;
+  white-space:   nowrap;
+}
+.conn-status--active  { background: #dcfce7; color: #166534; }
+.conn-status--error   { background: #fee2e2; color: #991b1b; }
+.conn-status--pending { background: #f1f5f9; color: var(--muted); }
+.conn-status--off     { background: #f1f5f9; color: var(--muted); }
+
+/* Setup hint — shown only when connection has no observed activity */
+.setup-hint {
+  display:       flex;
+  align-items:   flex-start;
+  gap:           .4rem;
+  margin-top:    .8rem;
+  padding:       .55rem .7rem;
+  background:    #fffbeb;
+  border:        1px solid #fde68a;
+  border-radius: var(--r);
+  font-size:     12px;
+  color:         #92400e;
+  line-height:   1.45;
+}
+.setup-hint-icon { flex-shrink: 0; }
+
+/* ── After-save success pane ─────────────────────────────────────────────────── */
+.wiz-success {
+  text-align:    center;
+  padding:       1.5rem .5rem .75rem;
+}
+.wiz-success-icon {
+  display:         inline-flex;
+  align-items:     center;
+  justify-content: center;
+  width:           44px;
+  height:          44px;
+  border-radius:   50%;
+  background:      #dcfce7;
+  color:           #166534;
+  font-size:       20px;
+  font-weight:     700;
+  margin-bottom:   .6rem;
+}
+.wiz-success-title {
+  font-size:   1rem;
+  font-weight: 600;
+  color:       var(--text);
+  margin-bottom: .2rem;
+}
+.wiz-success-sub {
+  font-size: 13px;
+  color:     var(--muted);
+}
+
+.wiz-next-steps {
+  margin-top:    1rem;
+  padding:       .85rem 1rem;
+  background:    var(--surface);
+  border:        1px solid var(--border);
+  border-radius: var(--r);
+}
+.wiz-next-label {
+  font-size:     11px;
+  font-weight:   700;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color:         var(--muted);
+  margin-bottom: .4rem;
+}
+.wiz-next-text {
+  font-size:   13px;
+  color:       var(--text);
+  line-height: 1.55;
+}
+.wiz-next-note {
+  margin-top: .5rem;
+  font-size:  12px;
+  color:      var(--muted);
+}
+
+/* ── Empty state ─────────────────────────────────────────────────────────────── */
+.empty-state {
+  grid-column:  1 / -1;
+  text-align:   center;
+  padding:      3rem 1rem;
+  color:        var(--muted);
+}
+.empty-state-icon  { font-size: 2.5rem; margin-bottom: .5rem; }
+.empty-state-title { font-size: 1rem; font-weight: 600; color: var(--text); margin-bottom: .35rem; }
+.empty-state-sub   { font-size: 13px; max-width: 360px; margin: 0 auto; }
+
 /* ── Modal / detail drawer ───────────────────────────────────────────────────── */
 .modal-backdrop {
   position:        fixed;

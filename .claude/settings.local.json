@@ -12,7 +12,19 @@
       "Bash(git -C \"C:/Users/FranciscoJavierLanda/pyme-data-integration-mvp\" log --oneline -5)",
       "Bash(git -C \"C:/Users/FranciscoJavierLanda/pyme-data-integration-mvp\" diff)",
       "Bash(git -C \"C:/Users/FranciscoJavierLanda/pyme-data-integration-mvp\" add .env.example src/config.ts src/index.ts src/repositories/event.repository.ts src/repositories/opportunity.repository.ts src/routes/contacts.ts src/routes/payments.ts src/routes/opportunities.ts src/services/payment.service.ts src/services/opportunity.service.ts src/types/models.ts src/lib/webhook-security.ts src/hooks/ sql/migrations/)",
-      "Bash(git -C:*)"
+      "Bash(git -C:*)",
+      "Bash(cmd /c \"npm install @fastify/static 2>&1\")",
+      "Bash(powershell -Command \"& ''C:\\\\Program Files\\\\nodejs\\\\npm.cmd'' install --prefix ''C:\\\\Users\\\\FranciscoJavierLanda\\\\pyme-data-integration-mvp\\\\dashboard'' 2>&1; Write-Host ''EXIT:'' $LASTEXITCODE\")",
+      "Bash(powershell -Command \"& ''C:\\\\Program Files\\\\nodejs\\\\npx.cmd'' tsc --noEmit 2>&1\")",
+      "Bash(powershell -Command \"[System.Environment]::SetEnvironmentVariable\\(''PATH'',''C:\\\\Program Files\\\\nodejs;'' + [System.Environment]::GetEnvironmentVariable\\(''PATH'',''Process''\\),''Process''\\); Set-Location ''C:\\\\Users\\\\FranciscoJavierLanda\\\\pyme-data-integration-mvp\\\\dashboard''; & ''C:\\\\Program Files\\\\nodejs\\\\node.exe'' ''.\\\\node_modules\\\\vite\\\\bin\\\\vite.js'' ''build'' 2>&1\")",
+      "Bash(powershell -Command \"New-Item -ItemType Directory -Force -Path ''C:\\\\Users\\\\FranciscoJavierLanda\\\\pyme-data-integration-mvp\\\\.claude'' | Out-Null; Write-Host ''ok''\")",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(powershell -Command \"Get-Command npm | Select-Object -ExpandProperty Source 2>&1\")",
+      "Read(//c/Program Files/nodejs/**)",
+      "Bash(\"C:\\\\Program Files\\\\nodejs\\\\node.exe\" \"node_modules/typescript/bin/tsc\" --noEmit)",
+      "Bash(\"C:\\\\Program Files\\\\nodejs\\\\node.exe\" -e \"const g = require\\(''./src/lib/secrets''\\); console.log\\(Object.keys\\(g\\)\\)\")",
+      "Bash(\"C:\\\\Program Files\\\\nodejs\\\\node.exe\" -e \"import\\(''./src/lib/secrets.js''\\).then\\(m=>console.log\\(Object.keys\\(m\\)\\)\\)\")",
+      "Bash(\"C:\\\\Program Files\\\\nodejs\\\\node.exe\" node_modules/vite/bin/vite.js build --mode development)"
     ]
   }
 }

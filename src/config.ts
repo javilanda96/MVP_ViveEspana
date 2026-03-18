@@ -1,3 +1,11 @@
+import {
+  getSupabaseUrl,
+  getSupabaseServiceKey,
+  getAdminApiKey,
+  getGhlWebhookSecret,
+  getStripeWebhookSecret,
+} from "./lib/secrets.js";
+
 // Validar que todas las variables de entorno requeridas están presentes
 function validateEnv(): void {
   const required = [
@@ -31,7 +39,7 @@ function validateEnv(): void {
 
   // Development-only warning (non-fatal)
   if ((process.env.NODE_ENV || "development") === "development") {
-    if (!process.env.ADMIN_API_KEY) {
+    if (!getAdminApiKey()) {
       console.warn(
         "[config] ADMIN_API_KEY not set — dashboard login is disabled. " +
         "Add ADMIN_API_KEY=<any-string> to .env to enable the operator dashboard."
@@ -43,7 +51,7 @@ function validateEnv(): void {
 validateEnv();
 
 export const config = {
-  // Server
+  // Server — PORT and NODE_ENV are non-sensitive config, not secrets
   port: parseInt(process.env.PORT || "3000", 10),
   nodeEnv: process.env.NODE_ENV || "development",
   isDevelopment: (process.env.NODE_ENV || "development") === "development",
@@ -51,21 +59,21 @@ export const config = {
 
   // Supabase
   supabase: {
-    url: process.env.SUPABASE_URL!,
-    serviceKey: process.env.SUPABASE_SERVICE_KEY!,
+    url:        getSupabaseUrl(),
+    serviceKey: getSupabaseServiceKey(),
   },
 
   // Webhook secrets — absent (undefined/empty) enables permissive dev mode
   webhooks: {
     timeoutMs:    5000,
     maxRetries:   3,
-    stripeSecret: process.env.STRIPE_WEBHOOK_SECRET || undefined,
-    ghlSecret:    process.env.GHL_WEBHOOK_SECRET    || undefined,
+    stripeSecret: getStripeWebhookSecret(),
+    ghlSecret:    getGhlWebhookSecret(),
   },
 
   // Admin dashboard — absent disables login (non-fatal in dev, required in production)
   admin: {
-    apiKey: process.env.ADMIN_API_KEY || undefined,
+    apiKey: getAdminApiKey(),
   },
 } as const;
 

@@ -161,3 +161,53 @@ export const getErrors = (f: ErrorsFilter) =>
 
 export const getPipeline = (f: PipelineFilter) =>
   apiFetch<PagedResponse<PipelineRow>>(`/pipeline${toQS(f as Record<string, string | number | undefined>)}`);
+
+// ─── Connections ──────────────────────────────────────────────────────────────
+
+export interface ConnectionRow {
+  id:          string;
+  name:        string;
+  source:      string;
+  event_type:  string;
+  endpoint:    string;
+  auth_type:   string;
+  description: string | null;
+  enabled:     boolean;
+  base_url:    string | null;
+  account_id:  string | null;
+  public_key:  string | null;
+  notes:       string | null;
+  created_at:  string;
+  updated_at:  string;
+}
+
+export interface ConnectionInput {
+  name:        string;
+  source:      string;
+  event_type:  string;
+  endpoint:    string;
+  auth_type:   string;
+  description: string | null;
+  enabled:     boolean;
+  base_url?:   string | null;
+  account_id?: string | null;
+  public_key?: string | null;
+  notes?:      string | null;
+}
+
+export const getConnections = () =>
+  apiFetch<ConnectionRow[]>("/connections");
+
+export const createConnection = (body: ConnectionInput) =>
+  apiFetch<ConnectionRow>("/connections", {
+    method:  "POST",
+    headers: { "Content-Type": "application/json" },
+    body:    JSON.stringify(body),
+  });
+
+export const updateConnection = (id: string, patch: Partial<ConnectionInput>) =>
+  apiFetch<ConnectionRow>(`/connections/${id}`, {
+    method:  "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body:    JSON.stringify(patch),
+  });

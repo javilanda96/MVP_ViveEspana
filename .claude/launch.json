@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Backend (Fastify)",
+      "runtimeExecutable": "C:\\Program Files\\nodejs\\node.exe",
+      "runtimeArgs": ["node_modules\\tsx\\dist\\cli.mjs", "src\\index.ts"],
+      "port": 3000
+    },
+    {
+      "name": "Dashboard (Vite dev)",
+      "runtimeExecutable": "C:\\Program Files\\nodejs\\node.exe",
+      "runtimeArgs": ["dashboard\\node_modules\\vite\\bin\\vite.js", "dashboard", "--port", "5173"],
+      "port": 5173
+    }
+  ]
+}

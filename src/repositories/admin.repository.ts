@@ -5,6 +5,7 @@
  */
 
 import { supabase } from "../lib/supabase.js";
+import { resolveConnections, type ResolvedConnection } from "../lib/connection-resolver.js";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -141,8 +142,12 @@ export async function getIntegrationActivity(
 ): Promise<IntegrationActivity[]> {
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
+  const descriptors = await resolveConnections(
+    INTEGRATION_DESCRIPTORS as unknown as ResolvedConnection[]
+  );
+
   const results = await Promise.all(
-    INTEGRATION_DESCRIPTORS.map(async (desc) => {
+    descriptors.map(async (desc) => {
       const [lastSeenRes, totalRes, failedRes] = await Promise.all([
         supabase
           .from("events_log")
@@ -260,6 +265,72 @@ export async function getErrors(
   if (error) throw new Error(`errors query failed: ${error.message}`);
 
   return { data: (data ?? []) as EventRow[], total: count ?? 0 };
+}
+
+// ─── Connections ──────────────────────────────────────────────────────────────
+
+export interface ConnectionRow {
+  id:          string;
+  name:        string;
+  source:      string;
+  event_type:  string;
+  endpoint:    string;
+  auth_type:   string;
+  description: string | null;
+  enabled:     boolean;
+  base_url:    string | null;
+  account_id:  string | null;
+  public_key:  string | null;
+  notes:       string | null;
+  created_at:  string;
+  updated_at:  string;
+}
+
+export interface ConnectionInput {
+  name:        string;
+  source:      string;
+  event_type:  string;
+  endpoint:    string;
+  auth_type:   string;
+  description: string | null;
+  enabled:     boolean;
+  base_url?:   string | null;
+  account_id?: string | null;
+  public_key?: string | null;
+  notes?:      string | null;
+}
+
+export async function listConnections(): Promise<ConnectionRow[]> {
+  const { data, error } = await supabase
+    .from("connections")
+    .select("*")
+    .order("created_at");
+  if (error) throw new Error(`connections query failed: ${error.message}`);
+  return (data ?? []) as ConnectionRow[];
+}
+
+export async function createConnection(input: ConnectionInput): Promise<ConnectionRow> {
+  const { data, error } = await supabase
+    .from("connections")
+    .insert(input)
+    .select()
+    .single();
+  if (error) throw new Error(`connection create failed: ${error.message}`);
+  return data as ConnectionRow;
+}
+
+export async function updateConnection(
+  id: string,
+  patch: Partial<ConnectionInput>
+): Promise<ConnectionRow | null> {
+  const { data, error } = await supabase
+    .from("connections")
+    .update(patch)
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) throw new Error(`connection update failed: ${error.message}`);
+  return data as ConnectionRow | null;
 }
 
 // ─── Pipeline ─────────────────────────────────────────────────────────────────

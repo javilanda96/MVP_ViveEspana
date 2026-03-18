@@ -17,6 +17,24 @@ import type { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { config } from "../config.js";
 import * as repo from "../repositories/admin.repository.js";
 
+// ─── Login rate limiter ───────────────────────────────────────────────────────
+
+const LOGIN_WINDOW_MS    = 15 * 60 * 1000; // 15 min
+const LOGIN_MAX_ATTEMPTS = 10;
+const loginAttempts      = new Map<string, { count: number; resetAt: number }>();
+
+function checkLoginRateLimit(ip: string): boolean {
+  const now   = Date.now();
+  const entry = loginAttempts.get(ip);
+  if (!entry || now > entry.resetAt) {
+    loginAttempts.set(ip, { count: 1, resetAt: now + LOGIN_WINDOW_MS });
+    return true;
+  }
+  if (entry.count >= LOGIN_MAX_ATTEMPTS) return false;
+  entry.count++;
+  return true;
+}
+
 // ─── Session store ────────────────────────────────────────────────────────────
 
 const SESSION_TTL_MS = 24 * 60 * 60 * 1000; // 24 h
@@ -80,6 +98,10 @@ export async function adminRoutes(fastify: FastifyInstance): Promise<void> {
     "/admin/login",
     async (request, reply) => {
       const { key } = request.body ?? {};
+
+      if (!checkLoginRateLimit(request.ip)) {
+        return reply.status(429).send({ error: "Demasiados intentos. Espera 15 minutos." });
+      }
 
       if (!config.admin.apiKey) {
         return reply.status(503).send({
@@ -181,6 +203,75 @@ export async function adminRoutes(fastify: FastifyInstance): Promise<void> {
         limit:      q.limit  ? parseInt(q.limit,  10) : undefined,
         offset:     q.offset ? parseInt(q.offset, 10) : undefined,
       });
+    }
+  );
+
+  // ── /admin/connections ────────────────────────────────────────────────────
+
+  const VALID_SOURCES    = new Set(["ghl", "stripe", "flywire", "holded", "manual"]);
+  const VALID_AUTH_TYPES = new Set(["GHL Shared Secret", "HMAC-SHA256", "none"]);
+
+  function validateConnectionFields(
+    body: Partial<repo.ConnectionInput>,
+    reply: FastifyReply,
+    requireAll: boolean
+  ): boolean {
+    const { source, auth_type, enabled } = body;
+    if (requireAll) {
+      if (!body.name || !body.source || !body.event_type || !body.endpoint || !body.auth_type) {
+        void reply.status(400).send({ error: "Campos requeridos: name, source, event_type, endpoint, auth_type" });
+        return false;
+      }
+    }
+    if (source !== undefined && !VALID_SOURCES.has(source)) {
+      void reply.status(400).send({ error: `source inválido. Permitidos: ${[...VALID_SOURCES].join(", ")}` });
+      return false;
+    }
+    if (auth_type !== undefined && !VALID_AUTH_TYPES.has(auth_type)) {
+      void reply.status(400).send({ error: `auth_type inválido. Permitidos: ${[...VALID_AUTH_TYPES].join(", ")}` });
+      return false;
+    }
+    if (enabled !== undefined && typeof enabled !== "boolean") {
+      void reply.status(400).send({ error: "enabled debe ser boolean" });
+      return false;
+    }
+    return true;
+  }
+
+  // GET /admin/connections
+  fastify.get("/admin/connections", { preHandler: adminAuthHook }, async () => {
+    return repo.listConnections();
+  });
+
+  // POST /admin/connections
+  fastify.post<{ Body: repo.ConnectionInput }>(
+    "/admin/connections",
+    { preHandler: adminAuthHook },
+    async (request, reply) => {
+      if (!validateConnectionFields(request.body, reply, true)) return;
+      const { name, source, event_type, endpoint, auth_type, description, enabled,
+              base_url, account_id, public_key, notes } = request.body;
+      return repo.createConnection({
+        name, source, event_type, endpoint, auth_type,
+        description: description ?? null,
+        enabled:     enabled ?? true,
+        base_url:    base_url   ?? null,
+        account_id:  account_id ?? null,
+        public_key:  public_key ?? null,
+        notes:       notes      ?? null,
+      });
+    }
+  );
+
+  // PATCH /admin/connections/:id
+  fastify.patch<{ Params: { id: string }; Body: Partial<repo.ConnectionInput> }>(
+    "/admin/connections/:id",
+    { preHandler: adminAuthHook },
+    async (request, reply) => {
+      if (!validateConnectionFields(request.body, reply, false)) return;
+      const row = await repo.updateConnection(request.params.id, request.body);
+      if (!row) return reply.status(404).send({ error: "Not found" });
+      return row;
     }
   );
 
