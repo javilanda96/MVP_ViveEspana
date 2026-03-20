@@ -46,6 +46,7 @@ export async function paymentRoutes(fastify: FastifyInstance): Promise<void> {
 
       // Reject empty payloads
       if (!body || Object.keys(body).length === 0) {
+        fastify.log.warn("Payment webhook rejected: empty payload");
         return reply.status(400).send({ error: "Empty payload" });
       }
 
@@ -92,6 +93,16 @@ export async function paymentRoutes(fastify: FastifyInstance): Promise<void> {
         }
 
         if (err instanceof ValidationError) {
+          fastify.log.warn(
+            {
+              error:       err.message,
+              external_id: body.external_id,
+              provider:    body.provider,
+              amount:      body.amount,
+              currency:    body.currency,
+            },
+            "Payment rejected: validation error"
+          );
           return reply.status(400).send({ error: err.message });
         }
 

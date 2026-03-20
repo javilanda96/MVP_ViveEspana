@@ -20,6 +20,7 @@ import { renderLogs }         from "./pages/logs.js";
 import { renderErrors }       from "./pages/errors.js";
 import { renderPipeline }     from "./pages/pipeline.js";
 import { renderIntegrations } from "./pages/integrations.js";
+import { renderAlerts }       from "./pages/alerts.js";
 
 // ─── Registro de páginas ───────────────────────────────────────────────────────
 
@@ -31,6 +32,7 @@ const PAGES: Record<string, PageRenderer> = {
   errors:       renderErrors,
   pipeline:     renderPipeline,
   integrations: renderIntegrations,
+  alerts:       renderAlerts,
 };
 
 let activePage = "overview";

@@ -275,6 +275,29 @@ export async function adminRoutes(fastify: FastifyInstance): Promise<void> {
     }
   );
 
+  // GET /admin/alerts
+  fastify.get<{
+    Querystring: {
+      status?: string; severity?: string;
+      from?: string; to?: string;
+      limit?: string; offset?: string;
+    };
+  }>(
+    "/admin/alerts",
+    { preHandler: adminAuthHook },
+    async (request) => {
+      const q = request.query;
+      return repo.getAlerts({
+        status:   q.status,
+        severity: q.severity,
+        from:     q.from,
+        to:       q.to,
+        limit:    q.limit  ? parseInt(q.limit,  10) : undefined,
+        offset:   q.offset ? parseInt(q.offset, 10) : undefined,
+      });
+    }
+  );
+
   // GET /admin/pipeline
   fastify.get<{
     Querystring: {

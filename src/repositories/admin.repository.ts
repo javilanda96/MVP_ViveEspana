@@ -15,6 +15,9 @@ export interface DashboardStats {
   failureRate24h:      string;   // "12.5" (percentage, no % sign)
   openOpportunities:   number;
   totalPaymentsAmount: number;
+  openAlertsCritical:  number;
+  openAlertsWarning:   number;
+  failedPayments24h:   number;
 }
 
 export interface EventRow {
@@ -99,7 +102,7 @@ const INTEGRATION_DESCRIPTORS = [
 export async function getStats(): Promise<DashboardStats> {
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
-  const [totalRes, failedRes, openOppRes, paymentsRes] = await Promise.all([
+  const [totalRes, failedRes, openOppRes, paymentsRes, critRes, warnRes, failedPaymentsRes] = await Promise.all([
     supabase
       .from("events_log")
       .select("*", { count: "exact", head: true })
@@ -120,6 +123,24 @@ export async function getStats(): Promise<DashboardStats> {
       .from("payments")
       .select("amount")
       .eq("status", "succeeded"),
+
+    supabase
+      .from("payment_alerts")
+      .select("*", { count: "exact", head: true })
+      .eq("status",   "open")
+      .eq("severity", "critical"),
+
+    supabase
+      .from("payment_alerts")
+      .select("*", { count: "exact", head: true })
+      .eq("status",   "open")
+      .eq("severity", "warning"),
+
+    supabase
+      .from("payments")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "failed")
+      .gte("created_at", since),
   ]);
 
   const total24h  = totalRes.count  ?? 0;
@@ -132,7 +153,16 @@ export async function getStats(): Promise<DashboardStats> {
     ? ((failed24h / total24h) * 100).toFixed(1)
     : "0.0";
 
-  return { total24h, failed24h, failureRate24h, openOpportunities, totalPaymentsAmount };
+  return {
+    total24h,
+    failed24h,
+    failureRate24h,
+    openOpportunities,
+    totalPaymentsAmount,
+    openAlertsCritical:  critRes.count          ?? 0,
+    openAlertsWarning:   warnRes.count          ?? 0,
+    failedPayments24h:   failedPaymentsRes.count ?? 0,
+  };
 }
 
 // ─── Integration activity ─────────────────────────────────────────────────────
@@ -331,6 +361,56 @@ export async function updateConnection(
     .single();
   if (error) throw new Error(`connection update failed: ${error.message}`);
   return data as ConnectionRow | null;
+}
+
+// ─── Payment alerts ───────────────────────────────────────────────────────────
+
+export interface AlertRow {
+  id:               string;
+  payment_id:       string;
+  rule_code:        string;
+  severity:         string;
+  status:           string;
+  message:          string;
+  context:          Record<string, unknown>;
+  detected_at:      string;
+  closed_at:        string | null;
+  resolution_notes: string | null;
+}
+
+export interface AlertsFilter {
+  status?:   string;
+  severity?: string;
+  from?:     string;
+  to?:       string;
+  limit?:    number;
+  offset?:   number;
+}
+
+export async function getAlerts(
+  filter: AlertsFilter
+): Promise<{ data: AlertRow[]; total: number }> {
+  const limit  = Math.min(filter.limit  ?? 50, 100);
+  const offset = filter.offset ?? 0;
+
+  let query = supabase
+    .from("payment_alerts")
+    .select(
+      "id, payment_id, rule_code, severity, status, message, context, detected_at, closed_at, resolution_notes",
+      { count: "exact" }
+    )
+    .order("detected_at", { ascending: false })
+    .range(offset, offset + limit - 1);
+
+  if (filter.status)   query = query.eq("status",      filter.status);
+  if (filter.severity) query = query.eq("severity",    filter.severity);
+  if (filter.from)     query = query.gte("detected_at", filter.from);
+  if (filter.to)       query = query.lte("detected_at", filter.to);
+
+  const { data, error, count } = await query;
+  if (error) throw new Error(`alerts query failed: ${error.message}`);
+
+  return { data: (data ?? []) as AlertRow[], total: count ?? 0 };
 }
 
 // ─── Pipeline ─────────────────────────────────────────────────────────────────

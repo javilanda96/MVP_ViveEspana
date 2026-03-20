@@ -1,0 +1,13 @@
+{
+  "external_id":    "pi_3OxKL2Stripe12345",
+  "event_id":       "evt_1OxRefundStripeABC",
+  "contact_email":  "maria.garcia@ejemplo.com",
+  "amount":         9900,
+  "currency":       "EUR",
+  "status":         "refunded",
+  "provider":       "stripe",
+  "metadata": {
+    "refund_id":     "re_3OxRefundStripe001",
+    "refund_reason": "requested_by_customer"
+  }
+}

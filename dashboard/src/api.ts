@@ -14,6 +14,9 @@ export interface StatsData {
   failureRate24h:      string;
   openOpportunities:   number;
   totalPaymentsAmount: number;
+  openAlertsCritical:  number;
+  openAlertsWarning:   number;
+  failedPayments24h:   number;
 }
 
 export interface IntegrationData {
@@ -161,6 +164,33 @@ export const getErrors = (f: ErrorsFilter) =>
 
 export const getPipeline = (f: PipelineFilter) =>
   apiFetch<PagedResponse<PipelineRow>>(`/pipeline${toQS(f as Record<string, string | number | undefined>)}`);
+
+// ─── Alerts ───────────────────────────────────────────────────────────────────
+
+export interface AlertRow {
+  id:               string;
+  payment_id:       string;
+  rule_code:        string;
+  severity:         string;
+  status:           string;
+  message:          string;
+  context:          Record<string, unknown>;
+  detected_at:      string;
+  closed_at:        string | null;
+  resolution_notes: string | null;
+}
+
+export interface AlertsFilter {
+  status?:   string;
+  severity?: string;
+  from?:     string;
+  to?:       string;
+  limit?:    number;
+  offset?:   number;
+}
+
+export const getAlerts = (f: AlertsFilter) =>
+  apiFetch<PagedResponse<AlertRow>>(`/alerts${toQS(f as Record<string, string | number | undefined>)}`);
 
 // ─── Connections ──────────────────────────────────────────────────────────────
 

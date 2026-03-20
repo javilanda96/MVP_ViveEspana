@@ -37,6 +37,18 @@ export async function renderOverview(container: HTMLElement): Promise<void> {
           <div class="kpi-value">€${fmtMoney(stats.totalPaymentsAmount)}</div>
           <div class="kpi-label">Pagos cobrados<br>(completados)</div>
         </div>
+        <div class="kpi-card${stats.failedPayments24h > 0 ? " alert" : ""}">
+          <div class="kpi-value">${stats.failedPayments24h}</div>
+          <div class="kpi-label">Cobros fallidos<br>(últimas 24 h)</div>
+        </div>
+        <div class="kpi-card${stats.openAlertsCritical > 0 ? " alert" : ""}">
+          <div class="kpi-value">${stats.openAlertsCritical}</div>
+          <div class="kpi-label">Alertas críticas<br>abiertas</div>
+        </div>
+        <div class="kpi-card${stats.openAlertsWarning > 0 ? " alert" : ""}">
+          <div class="kpi-value">${stats.openAlertsWarning}</div>
+          <div class="kpi-label">Alertas de aviso<br>abiertas</div>
+        </div>
       </div>
 
       <h3>Actividad de integraciones</h3>

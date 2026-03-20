@@ -173,6 +173,29 @@ export interface OpportunityStageHistoryInput {
   ghl_event_id: string | null;
 }
 
+// Tabla: payment_alerts
+export interface PaymentAlert {
+  id:               string;
+  payment_id:       string;
+  rule_code:        string;
+  severity:         "critical" | "warning";
+  status:           "open" | "resolved" | "dismissed";
+  message:          string;
+  context:          Record<string, unknown>;
+  detected_at:      string;
+  closed_at:        string | null;
+  resolution_notes: string | null;
+}
+
+// Payload para insertar una alerta (sin campos generados por la BD)
+export interface PaymentAlertInput {
+  payment_id: string;
+  rule_code:  string;
+  severity:   "critical" | "warning";
+  message:    string;
+  context:    Record<string, unknown>;
+}
+
 // Tabla: sync_queue
 export interface SyncQueueItem {
   id: string;

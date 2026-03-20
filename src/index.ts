@@ -136,6 +136,11 @@ fastify.register(adminRoutes);
 fastify.setErrorHandler((error, _request, reply) => {
   fastify.log.error(error);
 
+  const statusCode = error.statusCode ?? 500;
+  if (statusCode < 500) {
+    return reply.status(statusCode).send({ error: error.message });
+  }
+
   reply.status(500).send({
     error: "Internal Server Error",
     message: NODE_ENV === "development" ? error.message : undefined,

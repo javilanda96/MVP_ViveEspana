@@ -3,6 +3,7 @@ import {
   findContactByEmail,
 } from "../repositories/payment.repository.js";
 import { insertEventLog, isEventAlreadyLogged } from "../repositories/event.repository.js";
+import { evaluatePaymentAlerts } from "./alert.service.js";
 import type { Payment, PaymentInput } from "../types/models.js";
 
 // ─── Tipos públicos ───────────────────────────────────────────────────────────
@@ -50,13 +51,11 @@ export async function processPayment(
   rawPayload: Record<string, unknown>
 ): Promise<Payment> {
   // ── Validación de campos obligatorios ─────────────────────────────────────────
-  // These checks run before we can build an event log entry (external_id may be
-  // missing), so they throw without logging. Pure input errors from the sender.
+  // These checks run before webhook context (source, idempotency key) can be
+  // established, so they throw without logging. Pure structural input errors.
+  // NOTE: amount is intentionally NOT checked here — see post-idempotency block.
   if (!payload.external_id) {
     throw new ValidationError("external_id is required");
-  }
-  if (typeof payload.amount !== "number" || payload.amount <= 0) {
-    throw new ValidationError("amount must be a positive number");
   }
   if (!payload.currency) {
     throw new ValidationError("currency is required");
@@ -94,6 +93,27 @@ export async function processPayment(
     if (alreadyProcessed) {
       throw new DuplicateEventError(payload.event_id);
     }
+  }
+
+  // ── Validación de importe (con trazabilidad en events_log) ────────────────────
+  // Positioned after webhook context is established so that rejected-amount
+  // payloads produce a queryable events_log row (status = "failed"), giving
+  // operations a persistent signal equivalent to the contact-not-found case.
+  // The Fastify schema guarantees amount is a number; this guard catches
+  // zero and negative values that JSON schema type validation cannot reject.
+  if (payload.amount <= 0) {
+    const errorMessage = "amount must be a positive number";
+    await insertEventLog({
+      webhook_source:    webhookSource,
+      external_event_id: externalEventId,
+      event_type:        "payment.created",
+      status:            "failed",
+      payload:           rawPayload,
+      error_message:     errorMessage,
+      idempotency_key:   idempotencyKey,
+      processed_at:      new Date().toISOString(),
+    });
+    throw new ValidationError(errorMessage);
   }
 
   // ── Resolución del contacto ───────────────────────────────────────────────────
@@ -162,6 +182,12 @@ export async function processPayment(
   if (payment === null) {
     throw new DuplicatePaymentError(payload.external_id);
   }
+
+  // ── Evaluación de alertas operativas ──────────────────────────────────────────
+  // Fire-and-forget: un fallo del módulo de alertas no bloquea el flujo principal.
+  evaluatePaymentAlerts(payment).catch(err =>
+    console.error("[alert.service] evaluatePaymentAlerts failed", { paymentId: payment.id, err })
+  );
 
   await insertEventLog({
     webhook_source:    webhookSource,
