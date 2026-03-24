@@ -302,8 +302,8 @@ export interface SalesDealsFilter {
   offset?:        number;
 }
 
-export const getSalesFunnel = (pipeline_name?: string) =>
-  apiFetch<SalesFunnelResponse>(`/sales/funnel${toQS({ pipeline_name })}`);
+export const getSalesFunnel = (pipeline_name?: string, from?: string, to?: string) =>
+  apiFetch<SalesFunnelResponse>(`/sales/funnel${toQS({ pipeline_name, from, to })}`);
 
 export const getSalesDeals = (f: SalesDealsFilter) =>
   apiFetch<PagedResponse<SalesDealRow>>(`/sales/deals${toQS(f as Record<string, string | number | undefined>)}`);

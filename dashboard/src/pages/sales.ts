@@ -37,18 +37,53 @@ function classificationClass(c: string | null): string {
                                "";
 }
 
+type Preset = "thisMonth" | "lastMonth" | "all" | "custom";
+
+// Format a Date using LOCAL calendar fields, not UTC.
+// .toISOString() converts to UTC and shifts dates in non-UTC timezones (e.g. Spain UTC+1/+2).
+function toLocalDate(d: Date): string {
+  return [
+    d.getFullYear(),
+    String(d.getMonth() + 1).padStart(2, "0"),
+    String(d.getDate()).padStart(2, "0"),
+  ].join("-");
+}
+
+function presetToDates(preset: Preset): { from?: string; to?: string } {
+  const now = new Date();
+  if (preset === "thisMonth") {
+    return {
+      from: toLocalDate(new Date(now.getFullYear(), now.getMonth(),     1)),
+      to:   toLocalDate(new Date(now.getFullYear(), now.getMonth() + 1, 0)),
+    };
+  }
+  if (preset === "lastMonth") {
+    return {
+      from: toLocalDate(new Date(now.getFullYear(), now.getMonth() - 1, 1)),
+      to:   toLocalDate(new Date(now.getFullYear(), now.getMonth(),      0)),
+    };
+  }
+  return {};
+}
+
 export async function renderSales(container: HTMLElement): Promise<void> {
   let filter: SalesDealsFilter = { limit: LIMIT, offset: 0 };
   let activePipeline: string | undefined;
+  let activePreset:   Preset   = "thisMonth";
+  let periodFrom: string | undefined;
+  let periodTo:   string | undefined;
+
+  // Default: scope to current month on first load.
+  ({ from: periodFrom, to: periodTo } = presetToDates("thisMonth"));
 
   async function load(offset: number): Promise<void> {
     filter = { ...filter, offset };
 
-    // Funnel stages (filtered by pipeline if active) and deals fetched in parallel.
-    // KPIs are always global — the backend never filters sales_kpis_basic.
+    // Funnel and deals both scoped to the active period.
+    // Period applies globally; status/pipeline filter applies to deals only.
     const [funnelRes, dealsRes] = await Promise.all([
-      getSalesFunnel(activePipeline),
-      getSalesDeals({ ...filter, pipeline_name: activePipeline }),
+      getSalesFunnel(activePipeline, periodFrom, periodTo),
+      getSalesDeals({ ...filter, pipeline_name: activePipeline, from: periodFrom, to: periodTo }),
     ]);
 
     const { kpis, stages } = funnelRes;
@@ -66,6 +101,20 @@ export async function renderSales(container: HTMLElement): Promise<void> {
           Funnel de ventas: leads captados, conversión a venta cerrada, valor del pipeline
           activo y clasificación de cada operación como nueva venta o cross-sell.
         </p>
+
+        <!-- ── Filtro de periodo ──────────────────────────────────────────── -->
+        <div class="period-selector">
+          <button class="btn-period ${activePreset === "thisMonth" ? "btn-period-active" : ""}" id="preset-thisMonth">Este mes</button>
+          <button class="btn-period ${activePreset === "lastMonth" ? "btn-period-active" : ""}" id="preset-lastMonth">Mes anterior</button>
+          <button class="btn-period ${activePreset === "all"       ? "btn-period-active" : ""}" id="preset-all">Todo</button>
+          <span class="period-sep">|</span>
+          <label style="margin:0;display:flex;align-items:center;gap:.35rem;font-size:.85rem">Desde
+            <input type="date" id="period-from" value="${periodFrom ?? ""}" style="font-size:.85rem" />
+          </label>
+          <label style="margin:0;display:flex;align-items:center;gap:.35rem;font-size:.85rem">Hasta
+            <input type="date" id="period-to" value="${periodTo ?? ""}" style="font-size:.85rem" />
+          </label>
+        </div>
 
         <!-- ── KPI cards ──────────────────────────────────────────────────── -->
         <div class="kpi-grid">
@@ -146,12 +195,6 @@ export async function renderSales(container: HTMLElement): Promise<void> {
           <label>Pipeline
             <input type="text" id="f-pipeline" placeholder="nombre del pipeline" value="${esc(activePipeline ?? "")}" />
           </label>
-          <label>Desde
-            <input type="date" id="f-from" value="${filter.from ? filter.from.slice(0, 10) : ""}" />
-          </label>
-          <label>Hasta
-            <input type="date" id="f-to" value="${filter.to ? filter.to.slice(0, 10) : ""}" />
-          </label>
           <button id="btn-apply">Aplicar</button>
           <button id="btn-clear" class="btn-clear">Limpiar</button>
         </div>
@@ -206,7 +249,7 @@ export async function renderSales(container: HTMLElement): Promise<void> {
           Las etapas muestran el estado actual de las oportunidades (snapshot), no el flujo histórico.
           <strong>Nueva venta</strong> = primera operación ganada sobre el contacto.
           <strong>Cross-sell</strong> = operación ganada posterior sobre el mismo contacto.
-          La tasa de conversión es acumulada histórica — filtros temporales disponibles en la próxima iteración.
+          La tasa de conversión se calcula sobre el periodo seleccionado.
         </p>
       </section>
     `;
@@ -215,13 +258,37 @@ export async function renderSales(container: HTMLElement): Promise<void> {
       buildPagination(dealsRes.total, LIMIT, offset, load)
     );
 
+    // ── Period preset buttons ──────────────────────────────────────────────
+    (["thisMonth", "lastMonth", "all"] as Preset[]).forEach(preset => {
+      document.getElementById(`preset-${preset}`)!.addEventListener("click", () => {
+        activePreset = preset;
+        ({ from: periodFrom, to: periodTo } = presetToDates(preset));
+        filter = { ...filter, offset: 0 };
+        load(0);
+      });
+    });
+
+    // Custom date inputs — update period state and reload on change.
+    // Editing either input deactivates the preset buttons (activePreset → "custom").
+    const elPeriodFrom = document.getElementById("period-from") as HTMLInputElement;
+    const elPeriodTo   = document.getElementById("period-to")   as HTMLInputElement;
+
+    function onCustomDateChange(): void {
+      periodFrom   = elPeriodFrom.value || undefined;
+      periodTo     = elPeriodTo.value   || undefined;
+      activePreset = "custom";
+      filter       = { ...filter, offset: 0 };
+      load(0);
+    }
+    elPeriodFrom.addEventListener("change", onCustomDateChange);
+    elPeriodTo.addEventListener("change",   onCustomDateChange);
+
+    // ── Deals table filters ────────────────────────────────────────────────
     document.getElementById("btn-apply")!.addEventListener("click", () => {
       activePipeline = (document.getElementById("f-pipeline") as HTMLInputElement).value.trim() || undefined;
       filter = {
         ...filter,
         status: (document.getElementById("f-status") as HTMLSelectElement).value || undefined,
-        from:   (document.getElementById("f-from")   as HTMLInputElement).value  || undefined,
-        to:     (document.getElementById("f-to")     as HTMLInputElement).value  || undefined,
         offset: 0,
       };
       load(0);
