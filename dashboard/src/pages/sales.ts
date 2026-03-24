@@ -157,8 +157,9 @@ export async function renderSales(container: HTMLElement): Promise<void> {
                 <div style="margin-bottom:1.5rem">
                   <p class="funnel-pipeline-label">${esc(pname)}</p>
                   <div class="funnel-list">
-                    ${pStages.map(s => {
+                    ${pStages.map((s, i) => {
                       const barPct = Math.round((s.count_open / maxOpen) * 100);
+                      const isLast = i === pStages.length - 1;
                       return `
                         <div class="funnel-row">
                           <span class="funnel-label">${esc(s.stage_name ?? "Sin etapa")}</span>
@@ -172,6 +173,10 @@ export async function renderSales(container: HTMLElement): Promise<void> {
                           }</span>
                           <span class="funnel-value">${s.value_open > 0 ? fmtMoney(s.value_open) : "—"}</span>
                         </div>
+                        ${!isLast && s.pct_to_next !== null && s.pct_to_next !== undefined
+                          ? `<div class="funnel-conversion">↓ ${s.pct_to_next}%</div>`
+                          : !isLast ? `<div class="funnel-conversion funnel-conversion--empty">↓</div>` : ""
+                        }
                       `;
                     }).join("")}
                   </div>

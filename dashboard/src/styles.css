@@ -817,6 +817,17 @@ code {
   font-size:  12px;
 }
 
+.funnel-conversion {
+  font-size:   11px;
+  color:       var(--accent, #3b82f6);
+  padding:     0 0 0 160px;  /* indent to align under the stage label column */
+  line-height: 1;
+  margin:      -.2rem 0;     /* tighten vertical gap between rows */
+}
+.funnel-conversion--empty {
+  color: var(--muted);
+}
+
 /* ── Empty state ─────────────────────────────────────────────────────────────── */
 .empty-state {
   grid-column:  1 / -1;

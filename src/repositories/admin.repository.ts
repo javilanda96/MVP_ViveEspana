@@ -426,6 +426,7 @@ export interface SalesFunnelRow {
   value_open:    number;
   value_won:     number;
   value_active:  number;
+  pct_to_next:   number | null;  // % of this stage's open leads that advance to next stage
 }
 
 export interface SalesKpis {
