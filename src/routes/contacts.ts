@@ -27,10 +27,21 @@ const contactBodySchema = {
     name:        { type: "string" },
     firstName:   { type: "string" },
     lastName:    { type: "string" },
-    external_id: { type: "string" },
-    id:          { type: "string" },
-    source:      { type: "string", enum: ["ghl", "stripe", "manual"] },
-    metadata:    { type: "object" },
+    external_id:  { type: "string" },
+    id:           { type: "string" },
+    source:       { type: "string", enum: ["ghl", "stripe", "manual"] },
+    metadata:     { type: "object" },
+    customFields: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          id:          { type: "string" },
+          field_value: {},
+        },
+        additionalProperties: true,
+      },
+    },
   },
 } as const;
 

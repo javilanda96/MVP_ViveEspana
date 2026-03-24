@@ -30,6 +30,34 @@ export interface ContactPayload {
   // Metadatos opcionales
   source?: "ghl" | "stripe" | "manual";
   metadata?: Record<string, unknown>;
+
+  // GHL custom fields — array of { id, field_value } sent at top level of GHL contact webhooks.
+  // Merged into contacts.metadata under the "customFields" key.
+  customFields?: Array<{ id: string; field_value: unknown }>;
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+/**
+ * Merges payload.metadata and payload.customFields into a single JSONB-safe
+ * object for contacts.metadata.
+ *
+ * Rules:
+ *   - Neither present  → null
+ *   - Only metadata    → metadata unchanged
+ *   - Only customFields → { customFields: [...] }
+ *   - Both             → { ...metadata, customFields: [...] }
+ */
+function buildContactMetadata(
+  payload: ContactPayload
+): Record<string, unknown> | null {
+  const hasMetadata     = payload.metadata     != null;
+  const hasCustomFields = payload.customFields != null && payload.customFields.length > 0;
+
+  if (!hasMetadata && !hasCustomFields) return null;
+  if (hasMetadata && !hasCustomFields)  return payload.metadata!;
+  if (!hasMetadata && hasCustomFields)  return { customFields: payload.customFields };
+  return { ...payload.metadata, customFields: payload.customFields };
 }
 
 // ─── Errores ──────────────────────────────────────────────────────────────────
@@ -100,7 +128,7 @@ export async function processContact(
     phone:       payload.phone    ?? null,
     external_id,
     source:      payload.source   ?? "manual",
-    metadata:    payload.metadata ?? null,
+    metadata:    buildContactMetadata(payload),
   };
 
   // ── Clave de idempotencia: email tiene prioridad, luego phone ─────────────────
