@@ -413,6 +413,132 @@ export async function getAlerts(
   return { data: (data ?? []) as AlertRow[], total: count ?? 0 };
 }
 
+// ─── Sales ────────────────────────────────────────────────────────────────────
+
+export interface SalesFunnelRow {
+  pipeline_name: string | null;
+  stage_name:    string | null;
+  display_order: number | null;
+  count_open:    number;
+  count_won:     number;
+  count_lost:    number;
+  count_total:   number;
+  value_open:    number;
+  value_won:     number;
+  value_active:  number;
+}
+
+export interface SalesKpis {
+  total_leads:           number;
+  total_open:            number;
+  total_won:             number;
+  total_lost:            number;
+  value_pipeline_active: number;
+  value_won_total:       number;
+  conversion_pct:        number | null;
+  avg_deal_value_won:    number | null;
+}
+
+export interface SalesFunnelFilter {
+  pipeline_name?: string;
+  from?:          string;  // ISO date — filters opportunities.created_at >= from
+  to?:            string;  // ISO date — filters opportunities.created_at <= to
+}
+
+
+export interface SalesDealRow {
+  opportunity_id:       string;
+  external_id:          string;
+  opportunity_name:     string;
+  contact_id:           string;
+  contact_full_name:    string | null;
+  contact_email:        string | null;
+  pipeline_name:        string | null;
+  stage_name:           string | null;
+  status:               string;
+  monetary_value:       number | null;
+  currency:             string;
+  assigned_to:          string | null;
+  created_at:           string;
+  updated_at:           string;
+  last_stage_change_at: string | null;
+  win_rank:             number | null;
+  deal_classification:  string | null;  // 'nueva_venta' | 'cross_sell' | null
+  won_at:               string | null;
+}
+
+export interface SalesDealsFilter {
+  status?:        string;
+  pipeline_name?: string;
+  from?:          string;
+  to?:            string;
+  limit?:         number;
+  offset?:        number;
+}
+
+export async function getSalesFunnel(
+  filter: SalesFunnelFilter
+): Promise<{ kpis: SalesKpis; stages: SalesFunnelRow[] }> {
+  // Single path: SQL functions handle both filtered and unfiltered cases.
+  // NULL params → equivalent to the unfiltered views (sales_funnel_basic,
+  // sales_kpis_basic). KPIs are always scoped to the same period as stages.
+  const fromDate = filter.from ?? null;
+  const toDate   = filter.to   ?? null;
+
+  const [stagesRes, kpisRes] = await Promise.all([
+    supabase.rpc("sales_funnel_with_period", { from_date: fromDate, to_date: toDate }),
+    supabase.rpc("sales_kpis_with_period",   { from_date: fromDate, to_date: toDate }),
+  ]);
+
+  if (stagesRes.error) throw new Error(`sales funnel rpc failed: ${stagesRes.error.message}`);
+  if (kpisRes.error)   throw new Error(`sales kpis rpc failed: ${kpisRes.error.message}`);
+
+  // pipeline_name filter applied client-side — KPIs remain period-scoped
+  // but pipeline-global (consistent with the original design intent).
+  let stages = (stagesRes.data ?? []) as SalesFunnelRow[];
+  if (filter.pipeline_name) {
+    stages = stages.filter(s => s.pipeline_name === filter.pipeline_name);
+  }
+
+  // sales_kpis_with_period returns a one-row TABLE; data is an array.
+  const kpisRow = Array.isArray(kpisRes.data) ? kpisRes.data[0] : kpisRes.data;
+  const kpis: SalesKpis = kpisRow ?? {
+    total_leads:           0,
+    total_open:            0,
+    total_won:             0,
+    total_lost:            0,
+    value_pipeline_active: 0,
+    value_won_total:       0,
+    conversion_pct:        null,
+    avg_deal_value_won:    null,
+  };
+
+  return { kpis, stages };
+}
+
+export async function getSalesDeals(
+  filter: SalesDealsFilter
+): Promise<{ data: SalesDealRow[]; total: number }> {
+  const limit  = Math.min(filter.limit  ?? 50, 100);
+  const offset = filter.offset ?? 0;
+
+  let query = supabase
+    .from("sales_deals_outcomes")
+    .select("*", { count: "exact" })
+    .order("created_at", { ascending: false })
+    .range(offset, offset + limit - 1);
+
+  if (filter.status)        query = query.eq("status",        filter.status);
+  if (filter.pipeline_name) query = query.eq("pipeline_name", filter.pipeline_name);
+  if (filter.from)          query = query.gte("created_at",   filter.from);
+  if (filter.to)            query = query.lte("created_at",   filter.to);
+
+  const { data, error, count } = await query;
+  if (error) throw new Error(`sales deals query failed: ${error.message}`);
+
+  return { data: (data ?? []) as SalesDealRow[], total: count ?? 0 };
+}
+
 // ─── Pipeline ─────────────────────────────────────────────────────────────────
 
 export interface PipelineRow {

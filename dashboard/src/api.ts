@@ -241,3 +241,69 @@ export const updateConnection = (id: string, patch: Partial<ConnectionInput>) =>
     headers: { "Content-Type": "application/json" },
     body:    JSON.stringify(patch),
   });
+
+// ─── Sales ────────────────────────────────────────────────────────────────────
+
+export interface SalesFunnelRow {
+  pipeline_name: string | null;
+  stage_name:    string | null;
+  count_open:    number;
+  count_won:     number;
+  count_lost:    number;
+  count_total:   number;
+  value_open:    number;
+  value_won:     number;
+  value_active:  number;
+}
+
+export interface SalesKpis {
+  total_leads:           number;
+  total_open:            number;
+  total_won:             number;
+  total_lost:            number;
+  value_pipeline_active: number;
+  value_won_total:       number;
+  conversion_pct:        number | null;
+  avg_deal_value_won:    number | null;
+}
+
+export interface SalesFunnelResponse {
+  kpis:   SalesKpis;
+  stages: SalesFunnelRow[];
+}
+
+export interface SalesDealRow {
+  opportunity_id:       string;
+  external_id:          string;
+  opportunity_name:     string;
+  contact_id:           string;
+  contact_full_name:    string | null;
+  contact_email:        string | null;
+  pipeline_name:        string | null;
+  stage_name:           string | null;
+  status:               string;
+  monetary_value:       number | null;
+  currency:             string;
+  assigned_to:          string | null;
+  created_at:           string;
+  updated_at:           string;
+  last_stage_change_at: string | null;
+  win_rank:             number | null;
+  deal_classification:  string | null;
+  won_at:               string | null;
+}
+
+export interface SalesDealsFilter {
+  status?:        string;
+  pipeline_name?: string;
+  from?:          string;
+  to?:            string;
+  limit?:         number;
+  offset?:        number;
+}
+
+export const getSalesFunnel = (pipeline_name?: string) =>
+  apiFetch<SalesFunnelResponse>(`/sales/funnel${toQS({ pipeline_name })}`);
+
+export const getSalesDeals = (f: SalesDealsFilter) =>
+  apiFetch<PagedResponse<SalesDealRow>>(`/sales/deals${toQS(f as Record<string, string | number | undefined>)}`);

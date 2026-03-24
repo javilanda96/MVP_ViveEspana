@@ -723,6 +723,69 @@ code {
   color:      var(--muted);
 }
 
+/* ── Sales funnel ────────────────────────────────────────────────────────────── */
+.funnel-pipeline-label {
+  font-size:      12px;
+  font-weight:    600;
+  color:          var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  margin-bottom:  .6rem;
+}
+
+.funnel-list {
+  display:        flex;
+  flex-direction: column;
+  gap:            .45rem;
+}
+
+.funnel-row {
+  display:     grid;
+  grid-template-columns: 160px 1fr 36px 72px 150px;
+  align-items: center;
+  gap:         .75rem;
+  font-size:   13px;
+}
+
+.funnel-label {
+  color:         var(--text);
+  font-weight:   500;
+  white-space:   nowrap;
+  overflow:      hidden;
+  text-overflow: ellipsis;
+}
+
+.funnel-bar-wrap {
+  height:        10px;
+  background:    var(--surface-2);
+  border-radius: 999px;
+  overflow:      hidden;
+}
+
+.funnel-bar {
+  height:        100%;
+  background:    var(--primary);
+  border-radius: 999px;
+  min-width:     0;
+}
+
+.funnel-count {
+  text-align:  right;
+  font-weight: 600;
+  color:       var(--text);
+}
+
+.funnel-won {
+  text-align: center;
+  min-height: 1em;
+}
+
+.funnel-value {
+  text-align: right;
+  color:      var(--muted);
+  font-size:  12px;
+}
+
 /* ── Empty state ─────────────────────────────────────────────────────────────── */
 .empty-state {
   grid-column:  1 / -1;

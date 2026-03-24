@@ -19,6 +19,7 @@ import { renderOverview }     from "./pages/overview.js";
 import { renderLogs }         from "./pages/logs.js";
 import { renderErrors }       from "./pages/errors.js";
 import { renderPipeline }     from "./pages/pipeline.js";
+import { renderSales }        from "./pages/sales.js";
 import { renderIntegrations } from "./pages/integrations.js";
 import { renderAlerts }       from "./pages/alerts.js";
 
@@ -31,6 +32,7 @@ const PAGES: Record<string, PageRenderer> = {
   logs:         renderLogs,
   errors:       renderErrors,
   pipeline:     renderPipeline,
+  sales:        renderSales,
   integrations: renderIntegrations,
   alerts:       renderAlerts,
 };

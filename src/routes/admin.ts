@@ -317,4 +317,59 @@ export async function adminRoutes(fastify: FastifyInstance): Promise<void> {
       });
     }
   );
+
+  // ── Sales endpoints ──────────────────────────────────────────────────────────
+
+  // GET /admin/sales/funnel
+  // Returns KPIs + stage breakdown.
+  // ?pipeline_name= scopes stage rows (KPIs always global when no period given).
+  // ?from= ?to= ISO date strings — when present, KPIs and stages are both
+  // scoped to opportunities.created_at within the range (computed from raw
+  // opportunities, not the aggregation view).
+  // Invalid date format → 400.
+  fastify.get<{
+    Querystring: { pipeline_name?: string; from?: string; to?: string };
+  }>(
+    "/admin/sales/funnel",
+    { preHandler: adminAuthHook },
+    async (request, reply) => {
+      const q = request.query;
+      if (q.from && isNaN(Date.parse(q.from))) {
+        return reply.status(400).send({ error: "Invalid 'from' date — use ISO 8601 format (e.g. 2026-01-01)" });
+      }
+      if (q.to && isNaN(Date.parse(q.to))) {
+        return reply.status(400).send({ error: "Invalid 'to' date — use ISO 8601 format (e.g. 2026-01-31)" });
+      }
+      return repo.getSalesFunnel({
+        pipeline_name: q.pipeline_name,
+        from:          q.from,
+        to:            q.to,
+      });
+    }
+  );
+
+  // GET /admin/sales/deals
+  // Returns paginated rows from sales_deals_outcomes.
+  // Filters: ?status= ?pipeline_name= ?from= ?to= ?limit= ?offset=
+  fastify.get<{
+    Querystring: {
+      status?: string; pipeline_name?: string;
+      from?: string; to?: string;
+      limit?: string; offset?: string;
+    };
+  }>(
+    "/admin/sales/deals",
+    { preHandler: adminAuthHook },
+    async (request) => {
+      const q = request.query;
+      return repo.getSalesDeals({
+        status:        q.status,
+        pipeline_name: q.pipeline_name,
+        from:          q.from,
+        to:            q.to,
+        limit:         q.limit  ? parseInt(q.limit,  10) : undefined,
+        offset:        q.offset ? parseInt(q.offset, 10) : undefined,
+      });
+    }
+  );
 }
