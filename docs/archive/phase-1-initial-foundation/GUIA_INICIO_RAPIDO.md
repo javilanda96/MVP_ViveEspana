@@ -1,3 +1,8 @@
+ARCHIVED — HISTORICAL DOCUMENT
+Does not reflect current repository state.
+Kept only for historical traceability.
+================================================================================
+
 ================================================================================
 GUÍA RÁPIDA DE INICIO - FASE 1
 MVP: Integración de datos PYME

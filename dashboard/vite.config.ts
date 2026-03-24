@@ -8,4 +8,13 @@ export default defineConfig({
     outDir:    "dist",
     emptyOutDir: true,
   },
+  server: {
+    // In dev mode the Vite server has no knowledge of the Fastify admin routes.
+    // This proxy forwards /admin/* and /webhooks/* to the running backend so
+    // fetch("/admin/stats", ...) works during development without a 404.
+    proxy: {
+      "/admin":    "http://localhost:3000",
+      "/webhooks": "http://localhost:3000",
+    },
+  },
 });

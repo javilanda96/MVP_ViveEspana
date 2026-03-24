@@ -65,8 +65,6 @@ export const config = {
 
   // Webhook secrets — absent (undefined/empty) enables permissive dev mode
   webhooks: {
-    timeoutMs:    5000,
-    maxRetries:   3,
     stripeSecret: getStripeWebhookSecret(),
     ghlSecret:    getGhlWebhookSecret(),
   },

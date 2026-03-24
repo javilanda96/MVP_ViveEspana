@@ -1,3 +1,9 @@
+> **ARCHIVED — HISTORICAL DOCUMENT**
+> Does not reflect current repository state.
+> Kept only for historical traceability.
+
+---
+
 # FASE 1 - ÍNDICE DE ENTREGABLES
 
 ## 📋 Documentación

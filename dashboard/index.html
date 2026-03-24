@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Panel de Operaciones</title>
+  <title>ViveEspaña · Panel de gestión</title>
   <link rel="stylesheet" href="./src/styles.css" />
 </head>
 <body>
@@ -11,9 +11,11 @@
   <!-- ── Pantalla de inicio de sesión ────────────────────────────────────── -->
   <div id="login-screen">
     <div class="login-card">
-      <div class="login-logo">⚙</div>
-      <h1>Panel de Operaciones</h1>
-      <p class="login-sub">Introduce tu clave de administrador para acceder al panel interno.</p>
+      <div class="login-logo">
+        <img src="%BASE_URL%viveespana-logo.png" alt="ViveEspaña" />
+      </div>
+      <h1>Acceso al panel</h1>
+      <p class="login-sub">Gestión de captación, cobros e integraciones. Introduce tu clave para continuar.</p>
       <form id="login-form">
         <input
           type="password"
@@ -34,12 +36,12 @@
   <div id="main-app" style="display:none">
     <header>
       <div class="header-inner">
-        <span class="brand">Panel de Operaciones</span>
+        <img class="brand-logo" src="%BASE_URL%viveespana-logo.png" alt="ViveEspaña" />
         <div class="brand-sep"></div>
         <nav id="tab-nav">
           <button class="tab-btn active" data-page="overview">Resumen</button>
-          <button class="tab-btn"        data-page="logs">Registros</button>
-          <button class="tab-btn"        data-page="errors">Errores</button>
+          <button class="tab-btn"        data-page="logs">Actividad</button>
+          <button class="tab-btn"        data-page="errors">Incidencias</button>
           <button class="tab-btn"        data-page="pipeline">Pipeline</button>
           <button class="tab-btn"        data-page="integrations">Integraciones</button>
           <button class="tab-btn"        data-page="alerts">Alertas</button>

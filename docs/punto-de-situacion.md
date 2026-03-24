@@ -128,7 +128,7 @@ En la práctica, un MVP cumple los siguientes criterios en este proyecto:
 - ✅ La seguridad está implementada: autenticación de webhooks, sesiones de panel protegidas.
 - ⏳ No existe aún un mecanismo automático para reprocesar eventos fallidos.
 - ⏳ La clasificación y gestión de errores puede mejorarse y ampliarse.
-- ⏳ El panel es de solo lectura: no permite realizar acciones sobre los datos desde la interfaz.
+- ⏳ El panel es mayoritariamente de lectura: la sección de Integraciones permite crear y editar conexiones, pero las demás secciones (registros, errores, alertas, pipeline) no permiten modificar datos directamente desde la interfaz.
 
 ---
 
@@ -151,8 +151,8 @@ Configurar notificaciones automáticas (por email o Slack) cuando se supere un u
 ### Ampliación de integraciones
 El sistema está diseñado para incorporar nuevas integraciones de forma modular. Podrían añadirse otras herramientas del ecosistema de la empresa siguiendo el mismo patrón arquitectónico.
 
-### Panel con capacidad de acción
-En la fase actual el panel es de solo lectura. Una evolución natural sería permitir al operador realizar acciones básicas desde la propia interfaz: relanzar eventos, marcar incidencias como resueltas o gestionar configuraciones.
+### Panel con capacidad de acción ampliada
+La sección de Integraciones ya permite crear y editar conexiones desde la interfaz. Una evolución natural sería ampliar esta capacidad a otras secciones: relanzar eventos fallidos, marcar alertas como resueltas directamente desde el panel, o gestionar configuraciones avanzadas del sistema.
 
 ---
 

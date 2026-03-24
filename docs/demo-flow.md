@@ -25,21 +25,40 @@ El servidor escucha en `http://localhost:3000`.
 
 ## Endpoints disponibles
 
-| Método | Ruta                  | Descripción                                      |
-|--------|-----------------------|--------------------------------------------------|
-| GET    | /health               | Verifica que el servidor y Supabase están vivos  |
-| POST   | /webhooks/contacts    | Recibe y guarda contactos (GHL o manual)         |
-| POST   | /webhooks/payments    | Recibe y guarda pagos (Stripe o manual)          |
+### Webhooks (ingesta de datos)
+
+| Método | Ruta                       | Descripción                                              |
+|--------|----------------------------|----------------------------------------------------------|
+| GET    | /health                    | Verifica que el servidor y Supabase están vivos          |
+| POST   | /webhooks/contacts         | Recibe y guarda contactos (GHL o manual)                 |
+| POST   | /webhooks/payments         | Recibe y guarda pagos (Stripe o manual)                  |
+| POST   | /webhooks/opportunities    | Recibe cambios de etapa y estado de oportunidades (GHL)  |
+
+### Panel de administración (requiere sesión)
+
+El panel de operaciones está disponible en `/dashboard/`. Para acceder, es necesario iniciar sesión con `ADMIN_API_KEY` en la pantalla de login. El panel tiene seis secciones:
+
+| Sección         | Descripción                                                                   |
+|-----------------|-------------------------------------------------------------------------------|
+| Resumen         | KPIs de actividad del sistema: eventos, errores, alertas, pagos cobrados      |
+| Actividad       | Log completo de eventos con filtros por fuente, estado, tipo y fecha          |
+| Incidencias     | Vista filtrada de eventos fallidos con agrupación por tipo                    |
+| Pipeline        | Estado actual de oportunidades GHL con filtros por estado y pipeline          |
+| Integraciones   | Gestión de conexiones activas (crear, editar, ver estado por endpoint)        |
+| Alertas         | Alertas operativas de cobros (importes anómalos, divisas inesperadas)         |
+
+Para acceder a los endpoints del panel directamente vía API, usar la cookie de sesión obtenida en `POST /admin/login`.
 
 ---
 
 ## Tablas que toca cada flujo
 
-| Flujo               | Tablas escritas                  |
-|---------------------|----------------------------------|
-| POST /webhooks/contacts | `contacts`, `events_log`     |
-| POST /webhooks/payments | `payments`, `events_log`     |
-| GET /health             | `contacts` (solo lectura, 1 fila) |
+| Flujo                        | Tablas escritas                                              |
+|------------------------------|--------------------------------------------------------------|
+| POST /webhooks/contacts      | `contacts`, `events_log`                                     |
+| POST /webhooks/payments      | `payments`, `events_log`, `payment_alerts`                   |
+| POST /webhooks/opportunities | `opportunities`, `opportunity_stage_history`, `events_log`   |
+| GET /health                  | `contacts` (solo lectura, 1 fila)                            |
 
 ---
 
