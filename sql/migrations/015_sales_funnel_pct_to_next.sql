@@ -2,6 +2,9 @@
 -- Fixes zero-count stage gap: base CTE now comes from pipeline_stages (not opportunities),
 -- so stages with 0 leads in the period still appear with count_open=0 and LEAD() steps
 -- to the correct adjacent stage instead of skipping it.
+--
+-- DROP required because return type changes (pct_to_next column added).
+DROP FUNCTION IF EXISTS sales_funnel_with_period(timestamptz, timestamptz);
 
 CREATE OR REPLACE FUNCTION sales_funnel_with_period(
   from_date timestamptz DEFAULT NULL,
