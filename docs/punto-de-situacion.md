@@ -3,7 +3,7 @@
 
 **Fecha:** Marzo 2026
 **Destinatarios:** Equipo interno · Responsables de negocio · Cliente
-**Estado del proyecto:** MVP en producción
+**Estado del proyecto:** Sales MVP completado y validado
 
 ---
 
@@ -31,7 +31,7 @@ Los datos que llegan de distintas plataformas no tienen siempre el mismo formato
 Toda la información procesada queda guardada en una base de datos estructurada. Esto permite consultarla, filtrarla y analizarla en cualquier momento, y sirve como registro de auditoría de todo lo que ha ocurrido en el sistema.
 
 ### Visibilidad del negocio
-Los datos almacenados alimentan directamente el panel de operaciones interno, que permite al equipo monitorizar la actividad en tiempo real: contactos recibidos, oportunidades en el pipeline, pagos completados y posibles incidencias.
+Los datos almacenados alimentan directamente el panel de operaciones interno. Incluye monitorización técnica (contactos, pagos, incidencias) y analítica de ventas: funnel por etapas, tasa de conversión entre etapas, clasificación de operaciones (nueva venta / cross-sell) y filtrado por periodo.
 
 ---
 
@@ -86,6 +86,9 @@ Vista filtrada que muestra únicamente los eventos que han producido algún erro
 ### Pipeline de oportunidades
 Tabla con el estado actual de todas las oportunidades comerciales sincronizadas desde el CRM. Permite ver la fase en la que se encuentra cada oportunidad, su valor económico, el contacto asociado y los pagos cobrados vinculados a ese contacto. Se puede filtrar por estado y por nombre de pipeline.
 
+### Ventas
+Módulo de analítica comercial. Muestra el funnel de ventas con las etapas en el orden definido en el CRM, incluyendo etapas sin oportunidades activas. Para cada etapa se muestra el volumen de leads, la tasa de conversión a la siguiente etapa y los valores económicos disponibles. Incluye un selector de periodo (este mes, mes anterior, todo o rango personalizado) y una tabla de operaciones con clasificación automática entre nueva venta y cross-sell.
+
 ### Integraciones
 Registro de las integraciones activas y su actividad reciente. Muestra, para cada integración, el endpoint configurado, el tipo de autenticación utilizado, si el secreto de verificación está correctamente configurado, la fecha del último evento registrado y el volumen de eventos y fallos en las últimas 24 horas.
 
@@ -126,9 +129,10 @@ En la práctica, un MVP cumple los siguientes criterios en este proyecto:
 - ✅ Los eventos se almacenan de forma fiable con control de idempotencia (no se procesan dos veces el mismo evento).
 - ✅ El panel de operaciones permite monitorizar la actividad del sistema.
 - ✅ La seguridad está implementada: autenticación de webhooks, sesiones de panel protegidas.
+- ✅ El módulo de analítica de ventas está operativo: funnel, KPIs, conversión etapa a etapa, clasificación de operaciones y filtrado por periodo.
+- ⏳ Algunos campos de ventas no llegan desde GHL: el desglose por comercial y los KPIs de ingresos están bloqueados porque GHL no envía esos campos en el webhook. Requieren configuración en GHL, no cambios en el sistema.
 - ⏳ No existe aún un mecanismo automático para reprocesar eventos fallidos.
-- ⏳ La clasificación y gestión de errores puede mejorarse y ampliarse.
-- ⏳ El panel es mayoritariamente de lectura: la sección de Integraciones permite crear y editar conexiones, pero las demás secciones (registros, errores, alertas, pipeline) no permiten modificar datos directamente desde la interfaz.
+- ⏳ El panel es mayoritariamente de lectura: la sección de Integraciones permite crear y editar conexiones, pero las demás secciones no permiten modificar datos directamente desde la interfaz.
 
 ---
 
@@ -147,6 +151,9 @@ Ampliar la visibilidad del panel para incluir peticiones rechazadas antes del pr
 
 ### Alertas automáticas
 Configurar notificaciones automáticas (por email o Slack) cuando se supere un umbral de errores o cuando una integración lleve un tiempo determinado sin actividad.
+
+### Desbloqueo de campos de ventas desde GHL
+Actualizar los workflows de GHL para incluir `assignedTo` y `monetaryValue` en el payload del webhook de oportunidades. Esto activará automáticamente el desglose por comercial y los KPIs de ingresos sin cambios en el sistema.
 
 ### Ampliación de integraciones
 El sistema está diseñado para incorporar nuevas integraciones de forma modular. Podrían añadirse otras herramientas del ecosistema de la empresa siguiendo el mismo patrón arquitectónico.

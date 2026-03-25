@@ -36,18 +36,24 @@ El servidor escucha en `http://localhost:3000`.
 
 ### Panel de administración (requiere sesión)
 
-El panel de operaciones está disponible en `/dashboard/`. Para acceder, es necesario iniciar sesión con `ADMIN_API_KEY` en la pantalla de login. El panel tiene seis secciones:
+El panel está disponible en `/dashboard/`. Para acceder, iniciar sesión con `ADMIN_API_KEY`. El panel tiene siete secciones:
 
-| Sección         | Descripción                                                                   |
-|-----------------|-------------------------------------------------------------------------------|
-| Resumen         | KPIs de actividad del sistema: eventos, errores, alertas, pagos cobrados      |
-| Actividad       | Log completo de eventos con filtros por fuente, estado, tipo y fecha          |
-| Incidencias     | Vista filtrada de eventos fallidos con agrupación por tipo                    |
-| Pipeline        | Estado actual de oportunidades GHL con filtros por estado y pipeline          |
-| Integraciones   | Gestión de conexiones activas (crear, editar, ver estado por endpoint)        |
-| Alertas         | Alertas operativas de cobros (importes anómalos, divisas inesperadas)         |
+| Sección         | Descripción                                                                                      |
+|-----------------|--------------------------------------------------------------------------------------------------|
+| Resumen         | KPIs de actividad del sistema: eventos, errores, alertas, pagos cobrados                         |
+| Actividad       | Log completo de eventos con filtros por fuente, estado, tipo y fecha                             |
+| Incidencias     | Vista filtrada de eventos fallidos con agrupación por tipo                                       |
+| Pipeline        | Estado actual de oportunidades GHL con filtros por estado y pipeline                             |
+| Integraciones   | Gestión de conexiones activas (crear, editar, ver estado por endpoint)                           |
+| Alertas         | Alertas operativas de cobros (importes anómalos, divisas inesperadas)                            |
+| **Ventas**      | Funnel por etapas en orden CRM, conversión etapa a etapa, KPIs globales, clasificación de deals  |
 
-Para acceder a los endpoints del panel directamente vía API, usar la cookie de sesión obtenida en `POST /admin/login`.
+### Endpoints de analítica de ventas (requieren sesión)
+
+| Método | Ruta                      | Descripción                                                                 |
+|--------|---------------------------|-----------------------------------------------------------------------------|
+| GET    | /admin/sales/funnel       | KPIs globales + etapas del funnel. Acepta `?from=YYYY-MM-DD&to=YYYY-MM-DD` |
+| GET    | /admin/sales/deals        | Tabla de operaciones. Acepta `?status=`, `?pipeline_name=`, `?from=`, `?to=` |
 
 ---
 
@@ -59,6 +65,8 @@ Para acceder a los endpoints del panel directamente vía API, usar la cookie de 
 | POST /webhooks/payments      | `payments`, `events_log`, `payment_alerts`                   |
 | POST /webhooks/opportunities | `opportunities`, `opportunity_stage_history`, `events_log`   |
 | GET /health                  | `contacts` (solo lectura, 1 fila)                            |
+| GET /admin/sales/funnel      | `pipeline_stages`, `opportunities` (solo lectura, vía RPC)  |
+| GET /admin/sales/deals       | `sales_deals_outcomes` (solo lectura, vista)                 |
 
 ---
 
@@ -73,7 +81,7 @@ curl http://localhost:3000/health
 ```json
 {
   "status": "ok",
-  "timestamp": "2026-03-13T10:00:00.000Z",
+  "timestamp": "2026-03-25T10:00:00.000Z",
   "environment": "development"
 }
 ```
@@ -87,24 +95,26 @@ Si `status` es `"db_error"`, la conexión con Supabase ha fallado. Verificar `.e
 ### Descripción
 - Recibe un payload con datos de contacto.
 - Hace upsert en `contacts` (conflict en `email` si hay email, o en `phone` si solo hay teléfono).
+- Persiste `customFields` de GHL en `contacts.metadata` si están presentes.
 - Registra el evento en `events_log`.
 - Acepta tanto el formato interno (snake_case) como el formato nativo de GoHighLevel (camelCase).
 
 ### Campos aceptados
 
-| Campo         | Tipo     | Obligatorio       | Descripción                         |
-|---------------|----------|-------------------|-------------------------------------|
-| email         | string   | sí (o phone)      | Email del contacto                  |
-| phone         | string   | sí (o email)      | Teléfono del contacto               |
-| first_name    | string   | no                | Nombre (formato interno)            |
-| last_name     | string   | no                | Apellido (formato interno)          |
-| firstName     | string   | no                | Nombre (formato GHL)                |
-| lastName      | string   | no                | Apellido (formato GHL)              |
-| name          | string   | no                | Nombre completo (se hace splitting) |
-| external_id   | string   | no                | ID en el sistema de origen          |
-| id            | string   | no                | ID de contacto en GHL               |
-| source        | string   | no                | "ghl" / "stripe" / "manual"         |
-| metadata      | object   | no                | Datos adicionales libres            |
+| Campo         | Tipo     | Obligatorio       | Descripción                                        |
+|---------------|----------|-------------------|----------------------------------------------------|
+| email         | string   | sí (o phone)      | Email del contacto                                 |
+| phone         | string   | sí (o email)      | Teléfono del contacto                              |
+| first_name    | string   | no                | Nombre (formato interno)                           |
+| last_name     | string   | no                | Apellido (formato interno)                         |
+| firstName     | string   | no                | Nombre (formato GHL)                               |
+| lastName      | string   | no                | Apellido (formato GHL)                             |
+| name          | string   | no                | Nombre completo (se hace splitting)                |
+| external_id   | string   | no                | ID en el sistema de origen                         |
+| id            | string   | no                | ID de contacto en GHL                              |
+| source        | string   | no                | "ghl" / "stripe" / "manual"                        |
+| metadata      | object   | no                | Datos adicionales libres                           |
+| customFields  | array    | no                | Campos personalizados GHL `[{id, field_value}]`    |
 
 ### Ejemplo A – Payload tipo GoHighLevel
 ```bash
@@ -116,7 +126,10 @@ curl -X POST http://localhost:3000/webhooks/contacts \
     "phone": "+34612345678",
     "firstName": "Maria",
     "lastName": "Garcia",
-    "source": "ghl"
+    "source": "ghl",
+    "customFields": [
+      { "id": "cuali_field_id", "field_value": "cuali" }
+    ]
   }'
 ```
 
@@ -154,6 +167,7 @@ curl -X POST http://localhost:3000/webhooks/contacts \
 1. Ir a **Table Editor → contacts**
 2. Buscar por email o external_id
 3. Verificar que `source`, `first_name`, `last_name` están correctos
+4. Si se envió `customFields`, verificar que `metadata->customFields` contiene el array
 
 También verificar en **Table Editor → events_log**:
 - `event_type` = `"contact.upsert"`
@@ -202,29 +216,17 @@ curl -X POST http://localhost:3000/webhooks/payments \
   }'
 ```
 
-### Ejemplo B – Pago con contact_id directo
-```bash
-curl -X POST http://localhost:3000/webhooks/payments \
-  -H "Content-Type: application/json" \
-  -d '{
-    "external_id": "pi_3OxKL2Stripe67890",
-    "contact_id": "<UUID_DEL_CONTACTO>",
-    "amount": 4900,
-    "currency": "EUR",
-    "status": "succeeded",
-    "provider": "stripe"
-  }'
+### Respuesta esperada (200)
+```json
+{ "status": "ok" }
 ```
 
-### Ejemplo C – Pago fallido (contacto inexistente → error 400)
-
-Este caso es útil para demostrar que el sistema detecta inconsistencias:
-
+### Error esperado (400 – contacto inexistente)
 ```bash
 curl -X POST http://localhost:3000/webhooks/payments \
   -H "Content-Type: application/json" \
   -d '{
-    "external_id": "pi_3OxKL2Stripe99999",
+    "external_id": "pi_test_99999",
     "contact_email": "contacto.inexistente@ejemplo.com",
     "amount": 4900,
     "currency": "EUR",
@@ -236,28 +238,74 @@ curl -X POST http://localhost:3000/webhooks/payments \
 { "error": "No contact found with email: contacto.inexistente@ejemplo.com" }
 ```
 
-### Respuesta esperada (200)
-```json
-{ "status": "ok" }
+---
+
+## Flujo 4 – Consultar el funnel de ventas
+
+### Descripción
+- Devuelve KPIs globales + etapas del funnel en orden CRM.
+- Incluye `pct_to_next` (conversión a la siguiente etapa) en cada fila.
+- Acepta filtrado por periodo.
+
+### Sin filtro de periodo
+```bash
+curl -b admin_cookie.txt http://localhost:3000/admin/sales/funnel
 ```
 
-### Verificar en Supabase
-1. Ir a **Table Editor → payments**
-2. Verificar `external_id`, `contact_id`, `amount`, `currency`, `status`, `provider`
-3. Ir a **Table Editor → events_log**
-4. Verificar `event_type` = `"payment.created"`, `status` = `"processed"`
+### Con filtro de periodo
+```bash
+curl -b admin_cookie.txt \
+  "http://localhost:3000/admin/sales/funnel?from=2026-03-01&to=2026-03-31"
+```
+
+### Respuesta esperada
+```json
+{
+  "kpis": {
+    "total_leads": 4,
+    "total_open": 4,
+    "total_won": 0,
+    "total_lost": 0,
+    "value_pipeline_active": 0,
+    "value_won_total": 0,
+    "conversion_pct": 0,
+    "avg_deal_value_won": null
+  },
+  "stages": [
+    {
+      "pipeline_name": "Sales",
+      "stage_name": "New Lead",
+      "display_order": 1,
+      "count_open": 1,
+      "count_won": 0,
+      "count_lost": 0,
+      "count_total": 1,
+      "pct_to_next": 0
+    },
+    {
+      "pipeline_name": "Sales",
+      "stage_name": "Contacted",
+      "display_order": 2,
+      "count_open": 0,
+      "count_total": 0,
+      "pct_to_next": null
+    }
+  ]
+}
+```
+
+> Nota: las etapas sin oportunidades aparecen con `count=0` (no se omiten). `pct_to_next=null` en la última etapa y cuando la etapa actual tiene `count_open=0`.
 
 ---
 
-## Flujo 4 – Demo completo end-to-end
+## Flujo 5 – Demo completo end-to-end
 
-Secuencia de 3 pasos para demostrar el MVP completo a un tercero:
+Secuencia para demostrar el sistema completo a un tercero:
 
 ### Paso 1: Verificar que el sistema está vivo
 ```bash
 curl http://localhost:3000/health
 ```
-Resultado esperado: `{ "status": "ok", ... }`
 
 ### Paso 2: Crear un contacto
 ```bash
@@ -270,7 +318,6 @@ curl -X POST http://localhost:3000/webhooks/contacts \
     "source": "manual"
   }'
 ```
-Resultado esperado: `{ "status": "ok" }`
 → Mostrar en Supabase: nueva fila en `contacts` + evento en `events_log`.
 
 ### Paso 3: Registrar un pago para ese contacto
@@ -286,33 +333,28 @@ curl -X POST http://localhost:3000/webhooks/payments \
     "provider": "stripe"
   }'
 ```
-Resultado esperado: `{ "status": "ok" }`
 → Mostrar en Supabase: nueva fila en `payments` + nuevo evento en `events_log`.
 
-### Lo que demuestra este flujo
-- El backend recibe eventos externos (contactos, pagos).
-- Los datos se guardan correctamente en tablas relacionadas.
-- El sistema tiene trazabilidad completa: cada operación queda registrada en `events_log`.
-- El sistema detecta errores y los comunica con mensajes claros.
-- La arquitectura está preparada para conectar GoHighLevel (contactos) y Stripe (pagos) cuando estén disponibles — el endpoint ya existe y acepta el formato nativo de cada plataforma.
+### Paso 4: Ver el funnel de ventas en el dashboard
+- Abrir `/dashboard/` en el navegador
+- Hacer login con `ADMIN_API_KEY`
+- Ir al tab **Ventas**
+- Mostrar el funnel por etapas, el selector de periodo y la tabla de operaciones
 
 ---
 
 ## Notas de integración real
 
 ### GoHighLevel
-- Configurar webhook en: **Settings → Integrations → Webhooks**
-- URL: `https://<tu-dominio>/webhooks/contacts`
-- Método: POST
-- Eventos: Contact Created, Contact Updated
-- El endpoint ya acepta el formato nativo de GHL (`firstName`, `lastName`, `id`).
+- Configurar webhook en: **Settings → Workflows → [workflow] → Webhook action**
+- URL oportunidades: `https://<tu-dominio>/webhooks/opportunities`
+- URL contactos: `https://<tu-dominio>/webhooks/contacts`
+- ⚠️ Los workflows actuales no envían `assignedTo` ni `monetaryValue` — ver `docs/MILESTONE_SALES_MVP_CLOSURE.md` para instrucciones de desbloqueo.
 
 ### Stripe
 - Configurar webhook en: **Developers → Webhooks**
 - URL: `https://<tu-dominio>/webhooks/payments`
-- Método: POST
 - Eventos: `payment_intent.succeeded`, `payment_intent.payment_failed`
-- El endpoint ya acepta `external_id` (= `payment_intent.id`), `amount`, `currency`, `status`.
 
 ### ngrok (para pruebas locales con webhooks reales)
 ```bash
@@ -330,26 +372,30 @@ src/
   routes/
     contacts.ts                   # POST /webhooks/contacts
     payments.ts                   # POST /webhooks/payments
+    opportunities.ts              # POST /webhooks/opportunities
+    admin.ts                      # GET /admin/sales/funnel, GET /admin/sales/deals, ...
   services/
-    contact.service.ts            # Lógica de negocio: contactos
-    payment.service.ts            # Lógica de negocio: pagos
+    contact.service.ts            # Lógica de contactos (incluye buildContactMetadata)
+    opportunity.service.ts        # Lógica de oportunidades, win_rank, idempotencia
+    payment.service.ts            # Lógica de pagos
   repositories/
-    contact.repository.ts         # Upsert de contactos en Supabase
-    payment.repository.ts         # Insert de pagos + lookup por email
+    admin.repository.ts           # getSalesFunnel(), getSalesDeals()
+    contact.repository.ts         # Upsert de contactos
+    opportunity.repository.ts     # Upsert de oportunidades + stage history
     event.repository.ts           # Insert en events_log (no-throw)
-  types/
-    models.ts                     # Interfaces: Contact, Payment, EventLog...
-  lib/
-    supabase.ts                   # Cliente Supabase
+
+dashboard/src/
+  pages/sales.ts                  # Tab Ventas: funnel, KPIs, tabla de deals, selector de periodo
+  api.ts                          # getSalesFunnel(), getSalesDeals()
+
+sql/migrations/
+  009–011                         # Vistas sales_funnel_basic, sales_deals_outcomes, sales_kpis_basic
+  012                             # Funciones RPC sales_funnel_with_period, sales_kpis_with_period
+  013–014                         # pipeline_stages + ordenación por display_order
+  015                             # pct_to_next con etapas vacías incluidas
 
 docs/
   demo-flow.md                    # Este archivo
-  payloads/
-    contact-ghl.json              # Payload de ejemplo – contacto GHL
-    contact-manual.json           # Payload de ejemplo – contacto manual
-    payment-stripe.json           # Payload de ejemplo – pago Stripe exitoso
-    payment-failed.json           # Payload de ejemplo – pago con contacto inexistente
-
-sql/
-  schema.sql                      # Schema completo de la base de datos
+  MILESTONE_SALES_MVP_CLOSURE.md  # Estado final del milestone y condiciones de desbloqueo
+  payloads/                       # Payloads de ejemplo para tests manuales
 ```

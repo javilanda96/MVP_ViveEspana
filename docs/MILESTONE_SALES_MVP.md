@@ -58,11 +58,10 @@ La validación se ejecutó sobre datos reales de producción (oportunidades GHL 
 
 ## Limitaciones actuales
 
-- **Orden de etapas:** las etapas se muestran en orden alfabético. No existe tabla `pipeline_stages`. Si el nombre de una etapa cambia en GHL, aparecerá como etapa nueva en el funnel, fragmentando el histórico.
-- **Conversión no periódica:** la tasa de conversión es histórica acumulada desde el inicio de los datos. Comparaciones por mes o trimestre no son posibles con los endpoints actuales.
-- **Sin cualificación:** el campo `qualified_flag` (cuali/no-cuali) no está implementado. La presencia y formato del dato en `contacts.metadata` no ha sido inspeccionada — puede no existir o requerir mapeo manual desde campos personalizados de GHL.
-- **Sin desglose por comercial:** `assigned_to` está presente en la vista pero no hay vista ni endpoint dedicado. El campo puede estar vacío si GHL no asigna responsable de forma consistente.
-- **Riesgo de integridad en `monetary_value`:** el valor monetario de las oportunidades depende de que GHL envíe el campo correctamente. Oportunidades sin valor asignado contribuyen a conteos pero no a los totales económicos, lo que puede inflar la tasa de conversión y distorsionar el ticket medio.
+- **Sin cualificación:** el campo `qualified_flag` (cuali/no-cuali) no está implementado. El código de ingestión ya persiste `customFields` de GHL en `contacts.metadata`, pero ningún webhook nativo de contactos ha disparado aún con ese campo.
+- **Sin desglose por comercial:** `assigned_to` está presente en el esquema pero GHL no lo incluye en el payload de webhook. El campo es NULL en el 100% de las oportunidades actuales. El código de mapeo es correcto; el problema está en la configuración del workflow GHL.
+- **`monetary_value` ausente en origen:** GHL no envía `monetaryValue` en el payload de webhook de oportunidades. El 75%+ de las oportunidades tienen este campo a NULL. Los KPIs monetarios se calculan correctamente pero devuelven cero o nulo al no haber datos.
+- **Sin mecanismo de reconciliación:** si un webhook de GHL no se entrega, el funnel queda desactualizado sin notificación.
 
 ---
 
@@ -94,14 +93,15 @@ El roadmap DataQuick define para el dominio de Ventas: funnel de captación, cua
 
 | Capacidad roadmap | Estado en este MVP |
 |---|---|
-| Funnel por etapas | Cubierto (orden alfabético, no CRM) |
-| Métricas de conversión | Cubierto (histórico acumulado, sin periodos) |
+| Funnel por etapas | Cubierto (orden CRM vía `pipeline_stages`) |
+| Métricas de conversión | Cubierto (histórico acumulado + filtrado por periodo) |
+| Conversión etapa a etapa | Cubierto (`pct_to_next`, etapas vacías incluidas) |
+| Filtros por periodo | Cubierto (presets mensuales + rango personalizado) |
 | Nueva venta vs cross-sell | Cubierto |
-| Cualificación cuali/no-cuali | No implementado |
+| Cualificación cuali/no-cuali | Bloqueado — `customFields` no confirmado en origen GHL |
 | Comisiones | No implementado |
 | Atribución de marketing | No implementado |
-| Filtros por periodo | No implementado |
-| Desglose por comercial | No implementado |
+| Desglose por comercial | Bloqueado — `assigned_to` ausente en origen GHL |
 
 Este MVP cubre aproximadamente el 25–30% del dominio de Ventas definido en el roadmap. Las capacidades de cualificación, comisiones y atribución requieren trabajo adicional en ingesta, enriquecimiento de datos y lógica de negocio no construida aún.
 
@@ -123,9 +123,14 @@ MVP funcional. Validado end-to-end con datos de producción. Listo para demo con
 
 ---
 
-## Siguientes pasos no implementados (P1)
+## Estado de los P1 originales
 
-- Tabla `pipeline_stages` para orden correcto de etapas en funnel
-- Filtros temporales en KPIs (este mes, mes anterior, rango personalizado)
-- Verificación e integración de `qualified_flag` desde `contacts.metadata`
-- Vista de desglose de rendimiento por comercial (`assigned_to`)
+| Item | Estado |
+|---|---|
+| Tabla `pipeline_stages` para orden correcto de etapas | ✅ Implementado — migración 014 |
+| Filtros temporales en KPIs (este mes, mes anterior, rango personalizado) | ✅ Implementado — funciones RPC + UI |
+| Conversión etapa a etapa (`pct_to_next`) | ✅ Implementado — migración 015 |
+| Verificación e integración de `qualified_flag` desde `contacts.metadata` | 🔒 Bloqueado en origen GHL |
+| Vista de desglose de rendimiento por comercial (`assigned_to`) | 🔒 Bloqueado en origen GHL |
+
+Ver condiciones de desbloqueo detalladas en `docs/MILESTONE_SALES_MVP_CLOSURE.md`.

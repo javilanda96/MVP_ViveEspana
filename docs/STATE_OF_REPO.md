@@ -1,20 +1,19 @@
 # Estado actual del repositorio
 
-**Última actualización:** Marzo 2026
+**Última actualización:** 2026-03-25
 **Objetivo en curso:** MVP_ViveEspaña — DataQuick!
 
 ---
 
 ## Qué hace este repositorio ahora mismo
 
-Este repositorio implementa un **middleware de ingesta de webhooks** con un **panel de operaciones interno**. No es la plataforma DataQuick! completa. Es la capa de ingesta (Bronze parcial) y la capa de observabilidad operativa.
-Este repositorio debe entenderse como la base técnica sobre la que se construirá el pipeline DataQuick!, no como un entregable funcional del roadmap
+Este repositorio implementa un **middleware de ingesta de webhooks** con un **panel de operaciones interno** y un **módulo de analítica de ventas**. No es la plataforma DataQuick! completa. Es la capa de ingesta (Bronze parcial), la capa de observabilidad operativa y el primer entregable de inteligencia de negocio.
 
 En concreto:
 - Recibe eventos en tiempo real de **GoHighLevel** (contactos, oportunidades) y **Stripe** (pagos).
 - Persiste cada evento en **Supabase/PostgreSQL** con idempotencia y auditoría completa.
 - Detecta anomalías en cobros y genera alertas operativas automáticas.
-- Expone un **panel de administración interno** (`/dashboard/`) para monitorizar la actividad del sistema.
+- Expone un **panel de administración interno** (`/dashboard/`) con monitorización operativa y analítica de ventas.
 
 ---
 
@@ -40,7 +39,7 @@ En concreto:
 | Método | Ruta | Auth | Descripción |
 |--------|------|------|-------------|
 | GET | `/health` | ninguna | Estado del servidor y BD |
-| POST | `/webhooks/contacts` | GHL shared-secret | Upsert de contactos |
+| POST | `/webhooks/contacts` | GHL shared-secret | Upsert de contactos (persiste customFields en metadata) |
 | POST | `/webhooks/payments` | HMAC-SHA256 (Stripe) | Insert de pagos + alertas |
 | POST | `/webhooks/opportunities` | GHL shared-secret | Upsert de oportunidades + historial de etapas |
 | POST | `/admin/login` | ADMIN_API_KEY en body | Crea sesión; devuelve cookie HttpOnly |
@@ -55,6 +54,8 @@ En concreto:
 | GET | `/admin/connections` | cookie de sesión | Lista de conexiones registradas |
 | POST | `/admin/connections` | cookie de sesión | Crear nueva conexión |
 | PATCH | `/admin/connections/:id` | cookie de sesión | Editar conexión existente |
+| GET | `/admin/sales/funnel` | cookie de sesión | KPIs globales + etapas del funnel con filtrado por periodo opcional |
+| GET | `/admin/sales/deals` | cookie de sesión | Tabla paginada de operaciones con filtros por estado, pipeline y fecha |
 
 ### Base de datos — Supabase PostgreSQL (`sql/`)
 
@@ -67,8 +68,15 @@ En concreto:
 | `006_connections.sql` | `connections` (seed de 3 conexiones iniciales) |
 | `007_connections_extended_fields.sql` | columnas `base_url`, `account_id`, `public_key`, `notes` en `connections` |
 | `008_payment_alerts.sql` | `payment_alerts` |
+| `009_sales_funnel_basic.sql` | vista `sales_funnel_basic` |
+| `010_sales_deals_outcomes.sql` | vista `sales_deals_outcomes` (con `win_rank` y `deal_classification`) |
+| `011_sales_kpis_basic.sql` | vista `sales_kpis_basic` |
+| `012_sales_funnel_with_period.sql` | funciones RPC `sales_funnel_with_period()` y `sales_kpis_with_period()` |
+| `013_pipeline_stages_ordered_funnel.sql` | actualiza `sales_funnel_basic` con JOIN a `pipeline_stages` |
+| `014_pipeline_stages.sql` | tabla `pipeline_stages` (seed: New Lead=1, Contacted=2, Proposal Sent=3) |
+| `015_sales_funnel_pct_to_next.sql` | reescribe `sales_funnel_with_period` con `pct_to_next` y etapas vacías incluidas |
 
-> **Las migraciones no tienen runner automatizado.** Aplicarlas manualmente en Supabase SQL Editor en orden numérico (schema.sql primero, luego 002, 003, ..., 008).
+> **Las migraciones no tienen runner automatizado.** Aplicarlas manualmente en Supabase SQL Editor en orden numérico (schema.sql primero, luego 002, 003, ..., 015).
 
 ### Panel de administración — Vite + TypeScript (`dashboard/`)
 
@@ -82,6 +90,7 @@ Servido en `/dashboard/` como estático por Fastify (`dashboard/dist/` generado 
 | Pipeline | Tabla de `opportunity_overview`; filtrable por estado y nombre de pipeline |
 | Integraciones | CRUD de conexiones (`connections`); wizard de 4 pasos; estado de actividad por endpoint |
 | Alertas | Lista de `payment_alerts`; filtrable por estado y severidad |
+| **Ventas** | Funnel por etapas con orden CRM, conversión etapa a etapa, KPIs globales, tabla de operaciones con clasificación nueva_venta/cross_sell y filtrado por periodo |
 
 ---
 
@@ -100,25 +109,27 @@ Esto es lo que el roadmap DataQuick! requiere y el repositorio **no tiene**:
 ### Fuentes de datos
 - **Holded** — ningún conector. Sin facturas, sin Daily Ledger (nóminas 640\*, SS 642\*, comisiones 7005).
 - **MongoDB / Nomool** — ningún sync. Todo el dominio de Operaciones está bloqueado.
-- **GHL custom fields** — UTMs, `qualified_flag`, `qualification_score`, tags, país de origen no se capturan en el webhook actual.
+- **GHL custom fields** — el webhook de oportunidades no envía `assignedTo` ni `monetaryValue`. El webhook de contactos no ha disparado nativamente con `customFields`. El código de ingestión está preparado para capturar `customFields` cuando lleguen, pero los datos no están disponibles aún.
 - **Webflow** — no evaluado.
 
+### Campos bloqueados en origen (GHL)
+- `assigned_to` — ausente en todos los payloads de oportunidades GHL observados. Código correcto, problema en configuración de GHL.
+- `monetary_value` — ausente en todos los payloads de oportunidades GHL observados. Ídem.
+- `qualified` / `customFields` de contactos — ningún webhook nativo de contactos ha disparado con este campo.
+
 ### Capas de datos (Bronze/Silver/Gold)
-- No existe separación Bronze/Silver/Gold. El schema actual normaliza directamente en ingesta.
+- No existe separación formal Bronze/Silver/Gold. Las vistas SQL actuales funcionan directamente sobre tablas de ingesta.
 - No existe `silver_leads_master` con identidad unificada.
-- No existe `silver_funnel_events` con `is_assistance_milestone` ni umbral de asistencia configurable.
-- No existe `silver_deals_outcomes` con `win_rank` ni `deal_classification` (nuevo/upsell/cross-sell).
 - No existe ninguna tabla Gold (`gold_funnel_performance_monthly`, `gold_cases`, `gold_finance_unit_economics`).
 
 ### Lógica de negocio
 - Sin cálculo de comisiones (reglas de 12%, base imputable, PCE/seguro).
 - Sin atribución de marketing (UTM → nombre de formulario → respuesta del formulario).
 - Sin cualificación de leads (score, flag, perfil incompleto).
-- Sin clasificación del tipo de venta por oportunidad.
+- Sin desglose por comercial — `assigned_to` ausente en origen.
 
 ### Dashboards de negocio
-- Ninguno. El panel existente es monitorización técnica del sistema, no BI.
-- No existe dashboard de Ventas (US1), Marketing (US2), Operaciones (US3), ni Finanzas (US4).
+- No existe dashboard de Marketing (US2), Operaciones (US3), ni Finanzas (US4).
 - No existen los informes mensuales de vendedores (US6), asesores (US7) ni socios.
 
 ### Funcionalidades de producto
@@ -129,7 +140,7 @@ Esto es lo que el roadmap DataQuick! requiere y el repositorio **no tiene**:
 
 ### Infraestructura
 - Sin Dockerfile ni configuración de hosting.
-- Sin runner de migraciones (las 8 migraciones se aplican manualmente).
+- Sin runner de migraciones (las 15 migraciones se aplican manualmente).
 - Sin CI/CD.
 - Sin tests (ni unitarios ni de integración).
 
@@ -143,9 +154,7 @@ Este repositorio implementa:
 - **Fase 0:** parcialmente — el stack está en Supabase + Fastify, pero la decisión no está formalmente documentada.
 - **Fase 1:** pendiente — los workshops de métricas, APIs y tablas no han ocurrido todavía.
 - **Fase 2:** parcialmente — ingesta Bronze para GHL (contactos + oportunidades) y Stripe (pagos). Holded y MongoDB ausentes. Capas Silver y Gold inexistentes.
-- **Fase 3:** sin empezar — ningún dashboard de negocio existe.
-
-Cobertura **parcial** de la capa Bronze (actualmente limitada a GHL y Stripe, sin captura de campos custom ni fuentes financieras/operativas). El panel de administración es infraestructura de observabilidad, no un entregable del roadmap DataQuick!.
+- **Fase 3:** inicio — existe el dashboard de Ventas con funnel, KPIs y clasificación de operaciones. Resto de dominios (Marketing, Operaciones, Finanzas) sin empezar.
 
 ---
 
@@ -156,8 +165,16 @@ Cobertura **parcial** de la capa Bronze (actualmente limitada a GHL y Stripe, si
 | Roadmap completo del proyecto | `DataQuick_CLAUDE.md` (en `Downloads/`, fuera del repo) |
 | Estado del sistema para el cliente | `docs/punto-de-situacion.md` |
 | Guía de demo del sistema actual | `docs/demo-flow.md` |
+| Cierre del milestone Sales MVP | `docs/MILESTONE_SALES_MVP_CLOSURE.md` |
+| Detalle técnico del milestone Sales MVP | `docs/MILESTONE_SALES_MVP.md` |
+| Siguiente milestone planificado | `docs/MILESTONE_DATA_RELIABILITY_LAYER.md` |
 | Payloads de ejemplo para tests | `docs/payloads/` |
-| Queries de negocio y debug | `sql/queries/` |
 | Documentos históricos de fase inicial | `docs/archive/phase-1-initial-foundation/` |
 
-El **siguiente paso** es completar un flujo end-to-end del dominio de Ventas antes de extender a otras áreas.
+---
+
+## Siguiente paso recomendado
+
+Acceder a GHL y actualizar los workflows de oportunidades (`05ba98de / New oportunity` y `d0845369`) para incluir `assignedTo` y `monetaryValue` en el payload de webhook. Esto desbloquea los KPIs de ingresos y el desglose por comercial sin cambios de código.
+
+Ver condiciones de desbloqueo detalladas en `docs/MILESTONE_SALES_MVP_CLOSURE.md`.
