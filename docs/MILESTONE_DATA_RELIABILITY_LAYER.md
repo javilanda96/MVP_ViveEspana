@@ -1,14 +1,17 @@
 # MILESTONE_DATA_RELIABILITY_LAYER
 
+**Posición en el roadmap DataQuick!:** Entre Sales MVP (completado) y la conexión de Holded/MongoDB.
+**Referencia:** `docs/ROADMAP.md` — ver sección "Siguiente milestone recomendado".
+
 ## 1. Objetivo
 
-Transformar el sistema actual (Sales MVP) en una herramienta fiable para la toma de decisiones.
+Transformar el sistema actual (Sales MVP) en una herramienta fiable para la toma de decisiones antes de escalar a nuevas fuentes y departamentos.
 
 Este milestone no añade nuevas features de negocio.
 Se centra en:
-- Garantizar que los datos son correctos o marcar cuando no lo son
-- Evitar interpretaciones erróneas
-- Preparar el sistema para escalar con datos reales
+- Garantizar que los datos son correctos o marcar claramente cuando no lo son
+- Evitar que el equipo interprete mal las métricas por campos ausentes en GHL
+- Preparar el sistema para recibir Holded, MongoDB y fuentes adicionales con garantías
 
 ---
 
@@ -162,13 +165,14 @@ Mitigación:
 
 ## 8. Siguiente paso tras este milestone
 
-Una vez completado:
+Una vez completado este milestone, el orden de prioridad es:
 
-→ Reintentar integración GHL con datos reales
-→ Desbloquear:
-  - Revenue KPIs
-  - Salesperson breakdown
-  - Qualified segmentation
+1. **Actualizar workflows GHL** para incluir `assignedTo` y `monetaryValue` (Laura, sin ingeniería) → desbloquea revenue KPIs y desglose por vendedor
+2. **Bronze GHL Users** — tabla de usuarios GHL para mapear `assigned_to` ID → nombre real de vendedor
+3. **Bronze Holded** — facturas y Daily Ledger (nóminas 640*, SS 642*) → desbloquea comisiones y US4 Finanzas
+4. **Bronze MongoDB/Nomool** → desbloquea US3 Operaciones, US7 y US9
+
+Ver condiciones detalladas en `docs/ROADMAP.md`.
 
 ---
 

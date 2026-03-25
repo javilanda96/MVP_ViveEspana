@@ -2,12 +2,17 @@
 
 **Última actualización:** 2026-03-25
 **Objetivo en curso:** MVP_ViveEspaña — DataQuick!
+**Data Owner:** Marcos Olmo (CFO) · Ventas: Laura · Operaciones: Ignacio
+**Fecha fin estimada proyecto:** 30 junio 2026
+**Roadmap completo:** `docs/ROADMAP.md`
 
 ---
 
 ## Qué hace este repositorio ahora mismo
 
 Este repositorio implementa un **middleware de ingesta de webhooks** con un **panel de operaciones interno** y un **módulo de analítica de ventas**. No es la plataforma DataQuick! completa. Es la capa de ingesta (Bronze parcial), la capa de observabilidad operativa y el primer entregable de inteligencia de negocio.
+
+DataQuick! tiene como objetivo conectar GHL, Stripe, Holded y MongoDB/Nomool para producir dashboards de Ventas, Marketing, Operaciones y Finanzas. Este repositorio cubre actualmente: Bronze GHL + Stripe y el dashboard de Ventas (US1 parcial). El resto de fuentes y departamentos están pendientes — ver `docs/ROADMAP.md` para el estado completo.
 
 En concreto:
 - Recibe eventos en tiempo real de **GoHighLevel** (contactos, oportunidades) y **Stripe** (pagos).
@@ -162,19 +167,20 @@ Este repositorio implementa:
 
 | Propósito | Archivo |
 |-----------|---------|
-| Roadmap completo del proyecto | `DataQuick_CLAUDE.md` (en `Downloads/`, fuera del repo) |
-| Estado del sistema para el cliente | `docs/punto-de-situacion.md` |
-| Guía de demo del sistema actual | `docs/demo-flow.md` |
+| **Roadmap completo y cobertura por US** | `docs/ROADMAP.md` ← punto de entrada principal |
 | Cierre del milestone Sales MVP | `docs/MILESTONE_SALES_MVP_CLOSURE.md` |
 | Detalle técnico del milestone Sales MVP | `docs/MILESTONE_SALES_MVP.md` |
 | Siguiente milestone planificado | `docs/MILESTONE_DATA_RELIABILITY_LAYER.md` |
+| Estado del sistema para el cliente | `docs/punto-de-situacion.md` |
+| Guía de demo del sistema actual | `docs/demo-flow.md` |
 | Payloads de ejemplo para tests | `docs/payloads/` |
 | Documentos históricos de fase inicial | `docs/archive/phase-1-initial-foundation/` |
+| Referencia original del cliente | `DataQuick_CLAUDE.md` (en `Downloads/`, fuera del repo) |
 
 ---
 
 ## Siguiente paso recomendado
 
-Acceder a GHL y actualizar los workflows de oportunidades (`05ba98de / New oportunity` y `d0845369`) para incluir `assignedTo` y `monetaryValue` en el payload de webhook. Esto desbloquea los KPIs de ingresos y el desglose por comercial sin cambios de código.
+Ver `docs/ROADMAP.md` sección "Siguiente milestone recomendado" para las opciones ordenadas por impacto/esfuerzo.
 
-Ver condiciones de desbloqueo detalladas en `docs/MILESTONE_SALES_MVP_CLOSURE.md`.
+Acción inmediata sin ingeniería: acceder a GHL y actualizar los workflows de oportunidades (`05ba98de / New oportunity` y `d0845369`) para incluir `assignedTo` y `monetaryValue` en el payload del webhook. Responsable: Laura.

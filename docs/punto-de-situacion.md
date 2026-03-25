@@ -9,11 +9,13 @@
 
 ## 1. Introducción
 
-Este proyecto es un sistema de integración de datos desarrollado a medida para una pyme que utiliza múltiples herramientas digitales en su operativa diaria.
+Este proyecto — **DataQuick!** — es la infraestructura de datos centralizada de Vive España. Su objetivo es conectar todas las herramientas del negocio (GHL, Stripe, Holded, MongoDB/Nomool), normalizar los datos y producir dashboards y KPIs para cuatro departamentos: **Ventas, Marketing, Operaciones y Finanzas**.
 
-El problema de partida era claro: las herramientas utilizadas —un CRM para gestión comercial y una plataforma de pagos— funcionaban de forma aislada. La información generada en cada una no se comunicaba con las demás, lo que obligaba a realizar actualizaciones manuales, generaba duplicidades y dificultaba tener una visión unificada del negocio.
+El problema de partida era claro: las herramientas utilizadas funcionaban de forma aislada. La información generada en cada una no se comunicaba con las demás, lo que obligaba a cálculos manuales en hojas de cálculo, generaba duplicidades y dificultaba tener una visión fiable del negocio.
 
-El sistema desarrollado actúa como **intermediario inteligente** entre esas herramientas. Recibe automáticamente los eventos que ocurren en cada plataforma, los procesa, los normaliza y los almacena de forma centralizada. Esto permite que la información fluya de manera coherente y que el equipo pueda consultarla desde un único punto.
+El sistema actúa como **intermediario inteligente** entre esas herramientas. Recibe automáticamente los eventos de cada plataforma, los normaliza y los almacena de forma centralizada. El equipo puede consultar la información desde un único punto y tomar decisiones basadas en datos reales, no en Sheets.
+
+**Estado actual:** El módulo de Ventas está operativo (primer departamento, según priorización del cliente). Los módulos de Marketing, Operaciones y Finanzas están en la hoja de ruta pero aún no construidos.
 
 ---
 
@@ -49,7 +51,19 @@ El sistema está compuesto por los siguientes componentes:
 
 ---
 
-## 4. Integraciones actuales
+## 4. Integraciones y fuentes de datos
+
+### Fuentes previstas en el roadmap completo
+
+| Fuente | Qué aporta | Estado |
+|---|---|---|
+| GoHighLevel (CRM) | Leads, pipeline, etapas, cualificación, UTMs | ✅ Activo (parcial — faltan UTMs, customFields, assignedTo) |
+| Stripe | Pagos, suscripciones, refunds | ✅ Activo |
+| Holded | Facturas, nóminas, contabilidad, comisiones | ❌ No conectado |
+| MongoDB / Nomool | Expedientes y eventos de estudiantes (Operaciones) | ❌ No conectado |
+| Google Sheets | Catálogo de productos, pesos bundle, tabla influencers | ❌ No conectado |
+
+### Integraciones actuales
 
 ### GoHighLevel (CRM)
 
@@ -136,40 +150,39 @@ En la práctica, un MVP cumple los siguientes criterios en este proyecto:
 
 ---
 
-## 8. Próximas mejoras posibles
+## 8. Próximas fases del proyecto
 
-A continuación se describen las mejoras más relevantes que podrían incorporarse en fases posteriores del proyecto:
+### Inmediato — Desbloquear campos de ventas en GHL (sin ingeniería)
+Actualizar los workflows de GHL para incluir `assignedTo` y `monetaryValue` en el payload del webhook de oportunidades. Responsable: Laura. Desbloquea desglose por vendedor y KPIs de ingresos sin cambios en el sistema.
 
-### Reprocesamiento de eventos fallidos
-Cuando un evento falla por un problema temporal (por ejemplo, un fallo momentáneo de base de datos), actualmente el sistema lo marca como fallido y no lo reintenta. Una mejora natural sería añadir un mecanismo de reintento automático o permitir al operador relanzar manualmente un evento fallido desde el panel.
+### Siguiente milestone técnico — Fiabilidad de datos
+Añadir indicadores en el dashboard que diferencien entre "dato = 0" y "dato no disponible". Evita que el equipo interprete mal las métricas mientras algunos campos de GHL sigan ausentes.
 
-### Mejor clasificación de errores
-Actualmente todos los errores se agrupan en la misma categoría. Clasificarlos por tipo (errores de datos, errores de conectividad, errores de negocio) facilitaría su diagnóstico y priorización.
+### Holded — Facturas y contabilidad
+Conectar la API de Holded para ingestar facturas y el Daily Ledger (nóminas y Seguridad Social). Desbloquea el cálculo de comisiones de vendedores, el informe mensual de comisiones y el dashboard financiero.
 
-### Mayor observabilidad del sistema
-Ampliar la visibilidad del panel para incluir peticiones rechazadas antes del procesamiento, tiempos de respuesta y métricas de salud del sistema en tiempo real.
+### MongoDB/Nomool — Expedientes de estudiantes
+Sync diario de la base de datos de Nomool a Supabase. Desbloquea el dashboard de productividad de asesores (expedientes, valor económico por asesor, work load). Acceso técnico: Marcos.
 
-### Alertas automáticas
-Configurar notificaciones automáticas (por email o Slack) cuando se supere un umbral de errores o cuando una integración lleve un tiempo determinado sin actividad.
+### Marketing — Atribución por canal e influencer
+Capturar UTMs y source de GHL. Conectar la tabla de influencers. Desbloquea el dashboard de marketing con CPL, ROAS por canal e influencer y análisis de leads por país.
 
-### Desbloqueo de campos de ventas desde GHL
-Actualizar los workflows de GHL para incluir `assignedTo` y `monetaryValue` en el payload del webhook de oportunidades. Esto activará automáticamente el desglose por comercial y los KPIs de ingresos sin cambios en el sistema.
+### Informes mensuales recurrentes
+Una vez conectados Holded y GHL users: informe de vendedores (base comisionable, comisiones, listo para nómina) e informe de asesores (expedientes, rentabilidad). Objetivo: eliminar el 80% del trabajo manual actual en cálculo de comisiones.
 
-### Ampliación de integraciones
-El sistema está diseñado para incorporar nuevas integraciones de forma modular. Podrían añadirse otras herramientas del ecosistema de la empresa siguiendo el mismo patrón arquitectónico.
+### IU de edición para vendedores y asesores
+Formulario con permisos restringidos para que vendedores y asesores editen campos de cross-sell, upsell y asesor asignado en registros de los últimos 30 días.
 
-### Panel con capacidad de acción ampliada
-La sección de Integraciones ya permite crear y editar conexiones desde la interfaz. Una evolución natural sería ampliar esta capacidad a otras secciones: relanzar eventos fallidos, marcar alertas como resueltas directamente desde el panel, o gestionar configuraciones avanzadas del sistema.
+### Periodo de validación cruzada (criterio de entrega)
+Antes de usar DataQuick! como fuente de verdad: mínimo 1 mes comparando el pipeline con los cálculos manuales. Criterio: discrepancia < 2% financiero, < 5% funnel. Sign-off de Laura, Ignacio y Marcos.
 
 ---
 
 ## 9. Conclusión
 
-El sistema desarrollado resuelve un problema real y concreto: la desconexión entre las herramientas digitales utilizadas por el negocio. Gracias a este middleware, los eventos generados en el CRM y en la plataforma de pagos se reciben, procesan y almacenan de forma automática y centralizada.
+DataQuick! tiene como objetivo eliminar la dependencia de hojas de cálculo manuales y dar a Vive España una visión unificada y fiable del negocio. El módulo de Ventas ya está operativo y validado con datos reales. Las siguientes prioridades son: desbloquear los campos de GHL que aún faltan, conectar Holded para comisiones y finanzas, y conectar MongoDB para operaciones.
 
-El MVP está operativo y cubre las necesidades básicas de integración y observabilidad. El panel de operaciones permite al equipo supervisar el funcionamiento del sistema sin depender de conocimientos técnicos avanzados.
-
-El proyecto tiene una base sólida sobre la que construir. Las próximas fases pueden enfocarse en ampliar la observabilidad, mejorar la gestión de errores y añadir nuevas integraciones según las necesidades del negocio.
+La base técnica está construida y es sólida. Cada nueva fuente de datos se incorpora siguiendo el mismo patrón, sin rediseñar el sistema. El camino hasta junio 2026 está definido — ver `docs/ROADMAP.md` para el estado completo y las decisiones pendientes.
 
 ---
 
