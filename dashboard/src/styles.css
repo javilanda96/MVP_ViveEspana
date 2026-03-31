@@ -451,6 +451,18 @@ code {
   font-weight: 500;
   padding-top: 2px;
 }
+.kv-grid > span:not(.key) {
+  min-width:     0;
+  overflow-wrap: break-word;
+  word-break:    break-all;
+}
+.kv-grid > span:not(.key) code {
+  display:       inline-block;
+  max-width:     100%;
+  overflow-wrap: break-word;
+  word-break:    break-all;
+  white-space:   normal;
+}
 
 /* ── Integration wizard ──────────────────────────────────────────────────────── */
 
