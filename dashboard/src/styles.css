@@ -221,11 +221,13 @@ main { padding: 2rem 1.75rem; max-width: 1400px; }
 .kpi-card.alert  { border-left-color: var(--danger); }
 
 .kpi-value {
-  font-size:   1.9rem;
-  font-weight: 700;
-  line-height: 1;
-  color:       var(--text);
+  font-size:     1.9rem;
+  font-weight:   700;
+  line-height:   1.15;
+  color:         var(--text);
   letter-spacing: -.02em;
+  overflow-wrap: break-word;
+  min-width:     0;
 }
 
 .kpi-label {

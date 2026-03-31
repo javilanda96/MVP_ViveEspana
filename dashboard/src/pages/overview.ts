@@ -34,7 +34,7 @@ export async function renderOverview(container: HTMLElement): Promise<void> {
           <div class="kpi-label">Oportunidades<br>abiertas</div>
         </div>
         <div class="kpi-card">
-          <div class="kpi-value">€${fmtMoney(stats.totalPaymentsAmount)}</div>
+          <div class="kpi-value" style="font-size:1.35rem">€${fmtMoney(stats.totalPaymentsAmount)}</div>
           <div class="kpi-label">Pagos cobrados<br>(completados)</div>
         </div>
         <div class="kpi-card${stats.failedPayments24h > 0 ? " alert" : ""}">
