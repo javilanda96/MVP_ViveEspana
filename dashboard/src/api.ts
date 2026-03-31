@@ -247,6 +247,7 @@ export const updateConnection = (id: string, patch: Partial<ConnectionInput>) =>
 export interface SalesFunnelRow {
   pipeline_name: string | null;
   stage_name:    string | null;
+  display_order: number | null;
   count_open:    number;
   count_won:     number;
   count_lost:    number;
@@ -254,6 +255,7 @@ export interface SalesFunnelRow {
   value_open:    number;
   value_won:     number;
   value_active:  number;
+  pct_to_next:   number | null;
 }
 
 export interface SalesKpis {

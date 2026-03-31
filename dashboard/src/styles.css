@@ -1,4 +1,6 @@
 /* ── Reset & variables ─────────────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
 :root {
   --bg:          #ffffff;
   --surface:     #f7f8fa;
@@ -6,8 +8,9 @@
   --border:      #e2e6ea;
   --text:        #1a1d23;
   --muted:       #6b7280;
-  --primary:     #2563eb;
-  --primary-dk:  #1d4ed8;
+  --primary:     #D9342B;
+  --primary-dk:  #B82B23;
+  --primary-lt:  rgba(217,52,43,.10);
   --danger:      #dc2626;
   --success:     #16a34a;
   --warning:     #d97706;
@@ -15,7 +18,7 @@
   --r-lg:        10px;
   --shadow-sm:   0 1px 3px rgba(0,0,0,.07), 0 1px 2px rgba(0,0,0,.04);
   --shadow-md:   0 4px 12px rgba(0,0,0,.08), 0 1px 3px rgba(0,0,0,.04);
-  --font:        -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  --font:        'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -34,7 +37,7 @@ body {
   align-items:     center;
   justify-content: center;
   min-height:      100vh;
-  background:      linear-gradient(135deg, #f0f4ff 0%, #f7f8fa 100%);
+  background:      linear-gradient(135deg, #fdf1f0 0%, #f7f8fa 100%);
 }
 
 .login-card {
@@ -86,7 +89,7 @@ body {
 .login-card input:focus {
   outline:      none;
   border-color: var(--primary);
-  box-shadow:   0 0 0 3px rgba(37,99,235,.1);
+  box-shadow:   0 0 0 3px var(--primary-lt);
 }
 
 .login-card button {
