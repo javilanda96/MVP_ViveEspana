@@ -25,7 +25,12 @@
       "Bash(\"C:\\\\Program Files\\\\nodejs\\\\node.exe\" -e \"const g = require\\(''./src/lib/secrets''\\); console.log\\(Object.keys\\(g\\)\\)\")",
       "Bash(\"C:\\\\Program Files\\\\nodejs\\\\node.exe\" -e \"import\\(''./src/lib/secrets.js''\\).then\\(m=>console.log\\(Object.keys\\(m\\)\\)\\)\")",
       "Bash(\"C:\\\\Program Files\\\\nodejs\\\\node.exe\" node_modules/vite/bin/vite.js build --mode development)",
-      "Bash(grep -r \"stripe\\\\|webhook\\\\|payment\" C:UsersFranciscoJavierLandapyme-data-integration-mvp/src --include=*.ts --include=*.js -l)"
+      "Bash(grep -r \"stripe\\\\|webhook\\\\|payment\" C:UsersFranciscoJavierLandapyme-data-integration-mvp/src --include=*.ts --include=*.js -l)",
+      "Bash(node -e \":*)",
+      "WebFetch(domain:www.viveespana.es)",
+      "Bash(npm run:*)",
+      "Bash(python -c \":*)",
+      "Bash(cat /c/Users/FranciscoJavierLanda/pyme-data-integration-mvp/sql/migrations/*.sql)"
     ]
   }
 }
