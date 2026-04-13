@@ -1,7 +1,5 @@
-import {
-  insertPayment,
-  findContactByEmail,
-} from "../repositories/payment.repository.js";
+import { insertPayment } from "../repositories/payment.repository.js";
+import { findContactByEmail } from "../repositories/contact.repository.js";
 import { insertEventLog, isEventAlreadyLogged } from "../repositories/event.repository.js";
 import { evaluatePaymentAlerts } from "./alert.service.js";
 import type { Payment, PaymentInput } from "../types/models.js";

@@ -115,9 +115,10 @@ export async function adminRoutes(fastify: FastifyInstance): Promise<void> {
       }
 
       const token = createSession();
+      const secure = config.isProduction ? "; Secure" : "";
       reply.header(
         "Set-Cookie",
-        `${SESSION_COOKIE}=${token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=86400`
+        `${SESSION_COOKIE}=${token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=86400${secure}`
       );
       return { ok: true };
     }
@@ -127,9 +128,10 @@ export async function adminRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.post("/admin/logout", async (request, reply) => {
     const token = getSessionToken(request);
     if (token) sessions.delete(token);
+    const secure = config.isProduction ? "; Secure" : "";
     reply.header(
       "Set-Cookie",
-      `${SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0`
+      `${SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0${secure}`
     );
     return { ok: true };
   });
@@ -169,8 +171,8 @@ export async function adminRoutes(fastify: FastifyInstance): Promise<void> {
         from:              q.from,
         to:                q.to,
         external_event_id: q.external_event_id,
-        limit:             q.limit  ? parseInt(q.limit,  10) : undefined,
-        offset:            q.offset ? parseInt(q.offset, 10) : undefined,
+        limit:             q.limit  ? (parseInt(q.limit,  10) || 50) : undefined,
+        offset:            q.offset ? (parseInt(q.offset, 10) || 0) : undefined,
       });
     }
   );
@@ -201,8 +203,8 @@ export async function adminRoutes(fastify: FastifyInstance): Promise<void> {
         event_type: q.event_type,
         from:       q.from,
         to:         q.to,
-        limit:      q.limit  ? parseInt(q.limit,  10) : undefined,
-        offset:     q.offset ? parseInt(q.offset, 10) : undefined,
+        limit:      q.limit  ? (parseInt(q.limit,  10) || 50) : undefined,
+        offset:     q.offset ? (parseInt(q.offset, 10) || 0) : undefined,
       });
     }
   );
@@ -293,8 +295,8 @@ export async function adminRoutes(fastify: FastifyInstance): Promise<void> {
         severity: q.severity,
         from:     q.from,
         to:       q.to,
-        limit:    q.limit  ? parseInt(q.limit,  10) : undefined,
-        offset:   q.offset ? parseInt(q.offset, 10) : undefined,
+        limit:    q.limit  ? (parseInt(q.limit,  10) || 50) : undefined,
+        offset:   q.offset ? (parseInt(q.offset, 10) || 0) : undefined,
       });
     }
   );
@@ -313,8 +315,8 @@ export async function adminRoutes(fastify: FastifyInstance): Promise<void> {
       return repo.getPipeline({
         status:        q.status,
         pipeline_name: q.pipeline_name,
-        limit:         q.limit  ? parseInt(q.limit,  10) : undefined,
-        offset:        q.offset ? parseInt(q.offset, 10) : undefined,
+        limit:         q.limit  ? (parseInt(q.limit,  10) || 50) : undefined,
+        offset:        q.offset ? (parseInt(q.offset, 10) || 0) : undefined,
       });
     }
   );
@@ -361,15 +363,21 @@ export async function adminRoutes(fastify: FastifyInstance): Promise<void> {
   }>(
     "/admin/sales/deals",
     { preHandler: adminAuthHook },
-    async (request) => {
+    async (request, reply) => {
       const q = request.query;
+      if (q.from && isNaN(Date.parse(q.from))) {
+        return reply.status(400).send({ error: "Invalid 'from' date — use ISO 8601 format (e.g. 2026-01-01)" });
+      }
+      if (q.to && isNaN(Date.parse(q.to))) {
+        return reply.status(400).send({ error: "Invalid 'to' date — use ISO 8601 format (e.g. 2026-01-31)" });
+      }
       return repo.getSalesDeals({
         status:        q.status,
         pipeline_name: q.pipeline_name,
         from:          q.from,
         to:            q.to,
-        limit:         q.limit  ? parseInt(q.limit,  10) : undefined,
-        offset:        q.offset ? parseInt(q.offset, 10) : undefined,
+        limit:         q.limit  ? (parseInt(q.limit,  10) || 50) : undefined,
+        offset:        q.offset ? (parseInt(q.offset, 10) || 0) : undefined,
       });
     }
   );

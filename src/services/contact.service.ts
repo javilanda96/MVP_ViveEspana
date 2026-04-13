@@ -1,5 +1,5 @@
 import { upsertContact } from "../repositories/contact.repository.js";
-import { insertEventLog } from "../repositories/event.repository.js";
+import { insertEventLog, isEventAlreadyLogged } from "../repositories/event.repository.js";
 import type { Contact, ContactInput } from "../types/models.js";
 
 // ─── Tipos públicos ───────────────────────────────────────────────────────────
@@ -66,6 +66,13 @@ export class ValidationError extends Error {
   constructor(message: string) {
     super(message);
     this.name = "ValidationError";
+  }
+}
+
+export class DuplicateEventError extends Error {
+  constructor(eventId: string) {
+    super(`GHL contact event already processed: ${eventId}`);
+    this.name = "DuplicateEventError";
   }
 }
 
@@ -136,6 +143,14 @@ export async function processContact(
 
   // ── ID externo del evento: external_id normalizado si existe, si no idempotencyKey
   const externalEventId = external_id ?? idempotencyKey;
+
+  // ── Idempotencia a nivel de evento ────────────────────────────────────────────
+  if (external_id) {
+    const alreadyProcessed = await isEventAlreadyLogged(external_id);
+    if (alreadyProcessed) {
+      throw new DuplicateEventError(external_id);
+    }
+  }
 
   // ── Columna de conflicto para el upsert ───────────────────────────────────────
   const onConflict: "email" | "phone" = payload.email ? "email" : "phone";

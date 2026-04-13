@@ -40,7 +40,7 @@ const paymentBodySchema = {
 export async function paymentRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.post<{ Body: PaymentPayload }>(
     "/webhooks/payments",
-    { preHandler: stripeVerifyHook, schema: { body: paymentBodySchema } },
+    { preHandler: stripeVerifyHook, schema: { body: paymentBodySchema }, config: { rateLimit: { max: 300, timeWindow: "1 minute" } } },
     async (request, reply) => {
       const body = request.body;
 

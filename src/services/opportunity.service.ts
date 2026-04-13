@@ -4,7 +4,7 @@ import {
   insertStageHistoryRow,
 } from "../repositories/opportunity.repository.js";
 import { insertEventLog, isEventAlreadyLogged } from "../repositories/event.repository.js";
-import { findContactByEmail } from "../repositories/payment.repository.js";
+import { findContactByEmail } from "../repositories/contact.repository.js";
 import type { Opportunity, OpportunityInput } from "../types/models.js";
 
 // ─── Tipos públicos ───────────────────────────────────────────────────────────

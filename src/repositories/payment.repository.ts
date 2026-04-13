@@ -1,5 +1,5 @@
 import { supabase } from "../lib/supabase.js";
-import type { Contact, Payment, PaymentInput } from "../types/models.js";
+import type { Payment, PaymentInput } from "../types/models.js";
 
 /**
  * Insert a new payment record.
@@ -27,23 +27,3 @@ export async function insertPayment(
   return result as Payment;
 }
 
-/**
- * Look up a contact by email.
- *
- * Returns null (not throws) when no contact is found.
- */
-export async function findContactByEmail(
-  email: string
-): Promise<Contact | null> {
-  const { data, error } = await supabase
-    .from("contacts")
-    .select("*")
-    .eq("email", email)
-    .maybeSingle();
-
-  if (error) {
-    throw new Error(`DB lookup failed: ${error.message}`);
-  }
-
-  return data as Contact | null;
-}

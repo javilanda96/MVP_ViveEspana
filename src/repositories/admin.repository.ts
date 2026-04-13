@@ -121,7 +121,7 @@ export async function getStats(): Promise<DashboardStats> {
 
     supabase
       .from("payments")
-      .select("amount")
+      .select("amount.sum()")
       .eq("status", "succeeded"),
 
     supabase
@@ -146,8 +146,7 @@ export async function getStats(): Promise<DashboardStats> {
   const total24h  = totalRes.count  ?? 0;
   const failed24h = failedRes.count ?? 0;
   const openOpportunities = openOppRes.count ?? 0;
-  const totalPaymentsAmount = (paymentsRes.data ?? [])
-    .reduce((sum, p) => sum + Number(p.amount), 0);
+  const totalPaymentsAmount = Number((paymentsRes.data as unknown as { amount: { sum: string | null } }[])?.[0]?.amount?.sum ?? 0);
 
   const failureRate24h = total24h > 0
     ? ((failed24h / total24h) * 100).toFixed(1)

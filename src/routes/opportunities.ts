@@ -95,6 +95,7 @@ export async function opportunityRoutes(fastify: FastifyInstance): Promise<void>
     {
       preHandler: ghlVerifyHook,
       schema: { body: opportunityBodySchema },
+      config: { rateLimit: { max: 300, timeWindow: "1 minute" } },
     },
     async (request, reply) => {
       const body = request.body;

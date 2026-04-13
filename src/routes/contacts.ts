@@ -2,6 +2,7 @@ import type { FastifyInstance } from "fastify";
 import {
   processContact,
   ValidationError,
+  DuplicateEventError,
   type ContactPayload,
 } from "../services/contact.service.js";
 import { ghlVerifyHook } from "../hooks/ghl-verify.hook.js";
@@ -48,7 +49,7 @@ const contactBodySchema = {
 export async function contactRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.post<{ Body: ContactPayload }>(
     "/webhooks/contacts",
-    { preHandler: ghlVerifyHook, schema: { body: contactBodySchema } },
+    { preHandler: ghlVerifyHook, schema: { body: contactBodySchema }, config: { rateLimit: { max: 300, timeWindow: "1 minute" } } },
     async (request, reply) => {
       const body = request.body;
 
@@ -73,6 +74,10 @@ export async function contactRoutes(fastify: FastifyInstance): Promise<void> {
 
         return reply.status(200).send({ status: "ok" });
       } catch (err) {
+        if (err instanceof DuplicateEventError) {
+          fastify.log.info({ external_id: body.id ?? body.external_id }, "Duplicate GHL contact event ignored");
+          return reply.status(200).send({ status: "ok", message: "duplicate event ignored" });
+        }
         if (err instanceof ValidationError) {
           return reply.status(400).send({ error: err.message });
         }
