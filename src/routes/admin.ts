@@ -12,7 +12,7 @@
  * internal single-operator tool).
  */
 
-import { randomBytes, timingSafeEqual } from "node:crypto";
+import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import type { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { config } from "../config.js";
 import * as repo from "../repositories/admin.repository.js";
@@ -66,12 +66,13 @@ function getSessionToken(request: FastifyRequest): string | null {
   return null;
 }
 
-// Constant-time key comparison — both inputs hashed to fixed-length buffers
-// to avoid length-based timing leaks before timingSafeEqual.
+// Constant-time key comparison — both inputs hashed to a fixed-length digest
+// so timingSafeEqual always operates on equal-length buffers regardless of
+// key length, eliminating length-based and truncation timing leaks.
 function verifyKey(provided: string, expected: string): boolean {
-  const a = Buffer.from(provided.padEnd(64).slice(0, 64));
-  const b = Buffer.from(expected.padEnd(64).slice(0, 64));
-  return timingSafeEqual(a, b) && provided === expected;
+  const a = createHash("sha256").update(provided).digest();
+  const b = createHash("sha256").update(expected).digest();
+  return timingSafeEqual(a, b);
 }
 
 // ─── Auth preHandler ──────────────────────────────────────────────────────────

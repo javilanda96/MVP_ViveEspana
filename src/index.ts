@@ -36,6 +36,7 @@ const PORT     = config.port;
 const NODE_ENV = config.nodeEnv;
 
 const fastify = Fastify({
+  bodyLimit: 1 * 1024 * 1024, // 1 MB — explicit; protects all content-type parsers
   logger: {
     level: NODE_ENV === "production" ? "info" : "debug",
     transport:
@@ -141,7 +142,7 @@ fastify.setErrorHandler((error, _request, reply) => {
     return reply.status(statusCode).send({ error: error.message });
   }
 
-  reply.status(500).send({
+  return reply.status(500).send({
     error: "Internal Server Error",
     message: NODE_ENV === "development" ? error.message : undefined,
   });
